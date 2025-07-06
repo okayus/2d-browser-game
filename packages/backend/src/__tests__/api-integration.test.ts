@@ -15,9 +15,21 @@ import { eq } from 'drizzle-orm';
 import * as schema from '../db/スキーマ';
 import { プレイヤールーター } from '../api/プレイヤー';
 import モンスターAPI from '../api/モンスター';
-import { 初期データ投入, データリセット } from '../db/seed';
+import { 初期データ投入 } from '../db/seed';
 import type { データベース型 } from '../db/型定義';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
+
+// APIレスポンスの型定義
+interface APIレスポンス<T = any> {
+  成功: boolean;
+  メッセージ?: string;
+  データ?: T;
+  件数?: number;
+  エラー?: {
+    コード: string;
+    メッセージ: string;
+  };
+}
 
 // テスト用のHonoアプリケーション設定
 const app = new Hono();
@@ -83,9 +95,8 @@ beforeAll(async () => {
 
   // テスト用のミドルウェア設定（全体で統一したDrizzleインスタンスを使用）
   app.use('/api/*', async (c, next) => {
-    // @ts-expect-error テスト用のDrizzleインスタンス注入
     c.env = { 
-      DB: testD1Db,  // D1互換性のために保持
+      DB: testD1Db as any,  // D1互換性のために保持
       DRIZZLE_DB: db // 統合テスト用のDrizzleインスタンス
     };
     await next();
@@ -129,7 +140,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
 
     // レスポンス検証
     expect(response.status).toBe(201);
-    const responseData = await response.json();
+    const responseData = await response.json() as APIレスポンス<any>;
     
     expect(responseData.成功).toBe(true);
     expect(responseData.メッセージ).toBe('プレイヤーが作成されました');
@@ -178,7 +189,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'モンスタートレーナー' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json();
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
     const プレイヤーId = プレイヤーData.データ.id;
 
     // 2. 種族情報取得（みずガメを獲得）
@@ -195,7 +206,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
 
     // レスポンス検証
     expect(獲得Response.status).toBe(201);
-    const 獲得Data = await 獲得Response.json();
+    const 獲得Data = await 獲得Response.json() as APIレスポンス<any>;
     
     expect(獲得Data.成功).toBe(true);
     expect(獲得Data.データ.種族.名前).toBe('みずガメ');
@@ -229,7 +240,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'コレクター' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json();
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
     const プレイヤーId = プレイヤーData.データ.id;
 
     // 2. 追加でモンスターを獲得
@@ -246,7 +257,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const 一覧Response = await app.request(`/api/players/${プレイヤーId}/monsters`);
     
     expect(一覧Response.status).toBe(200);
-    const 一覧Data = await 一覧Response.json();
+    const 一覧Data = await 一覧Response.json() as APIレスポンス<any>;
     
     expect(一覧Data.成功).toBe(true);
     expect(一覧Data.件数).toBe(2); // 初期 + 追加獲得
@@ -278,7 +289,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'ニックネーマー' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json();
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
     const 初期モンスター = プレイヤーData.データ.初期モンスター;
 
     // 2. ニックネーム変更
@@ -289,7 +300,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     });
 
     expect(変更Response.status).toBe(200);
-    const 変更Data = await 変更Response.json();
+    const 変更Data = await 変更Response.json() as APIレスポンス<any>;
     
     expect(変更Data.成功).toBe(true);
     expect(変更Data.データ.ニックネーム).toBe('ピカチュウ');
@@ -319,7 +330,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'バリデーションテスター' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json();
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
     const 初期モンスター = プレイヤーData.データ.初期モンスター;
 
     // 2. 空文字でニックネーム変更試行
@@ -357,7 +368,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'リリーサー' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json();
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
     const プレイヤーId = プレイヤーData.データ.id;
     const 初期モンスター = プレイヤーData.データ.初期モンスター;
 
@@ -374,7 +385,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     });
 
     expect(解放Response.status).toBe(200);
-    const 解放Data = await 解放Response.json();
+    const 解放Data = await 解放Response.json() as APIレスポンス<any>;
     
     expect(解放Data.成功).toBe(true);
     expect(解放Data.メッセージ).toBe('モンスターを解放しました');
@@ -405,7 +416,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     });
 
     expect(変更Response.status).toBe(404);
-    const 変更Data = await 変更Response.json();
+    const 変更Data = await 変更Response.json() as APIレスポンス<any>;
     expect(変更Data.成功).toBe(false);
 
     // 解放試行
@@ -414,7 +425,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     });
 
     expect(解放Response.status).toBe(404);
-    const 解放Data = await 解放Response.json();
+    const 解放Data = await 解放Response.json() as APIレスポンス<any>;
     expect(解放Data.成功).toBe(false);
   });
 
@@ -433,14 +444,14 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: '取得テストプレイヤー' }),
     });
     
-    const 作成Data = await 作成Response.json();
+    const 作成Data = await 作成Response.json() as APIレスポンス<any>;
     const プレイヤーId = 作成Data.データ.id;
 
     // 2. プレイヤー取得
     const 取得Response = await app.request(`/api/players/${プレイヤーId}`);
     
     expect(取得Response.status).toBe(200);
-    const 取得Data = await 取得Response.json();
+    const 取得Data = await 取得Response.json() as APIレスポンス<any>;
     
     expect(取得Data.成功).toBe(true);
     expect(取得Data.データ.id).toBe(プレイヤーId);
