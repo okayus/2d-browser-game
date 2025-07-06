@@ -9,6 +9,7 @@
 
 import * as schema from './スキーマ';
 import { uuid生成 } from '@monster-game/shared';
+import type { データベース型 } from './型定義';
 
 /**
  * モンスター種族の初期データ
@@ -71,7 +72,7 @@ const 初期モンスター種族 = [
  * 
  * @param db - Drizzle ORMのデータベースインスタンス
  */
-export async function 初期データ投入(db: unknown) {
+export async function 初期データ投入(db: データベース型) {
   try {
     // 既存データのチェック
     const 既存種族 = await db
@@ -112,7 +113,7 @@ export async function 初期データ投入(db: unknown) {
  * - 本番環境では使用しないこと！
  * - 外部キー制約を考慮した削除順序
  */
-export async function データリセット(db: unknown) {
+export async function データリセット(db: データベース型) {
   console.log('⚠️  データベースをリセットします...');
   
   try {

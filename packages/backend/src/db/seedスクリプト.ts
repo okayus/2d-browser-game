@@ -11,6 +11,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './スキーマ';
 import { 初期データ投入, データリセット } from './seed';
+import type { データベース型 } from './型定義';
 
 /**
  * メイン実行関数
@@ -23,7 +24,7 @@ import { 初期データ投入, データリセット } from './seed';
 async function main() {
   // データベース接続
   const sqlite = new Database('.wrangler/state/v3/d1/miniflare-D1DatabaseObject/db.sqlite');
-  const db = drizzle(sqlite, { schema });
+  const db = drizzle(sqlite, { schema }) as unknown as データベース型;
 
   try {
     // コマンドライン引数の確認
