@@ -1,36 +1,21 @@
 /**
  * メインアプリケーションコンポーネント
- * 初学者向け: Reactの基本的なコンポーネント構造
+ * 
+ * 初学者向けメモ：
+ * - React Router を使用したSPA（Single Page Application）
+ * - ルーティング機能でページ遷移を管理
+ * - 全体のアプリケーション構造を定義
  */
 
-import React from 'react';
+import { Router } from './ルーター';
 
 /**
  * アプリケーションのメインコンポーネント
- * 全体のレイアウトとルーティングを管理
+ * 
+ * 初学者向けメモ：
+ * - Routerコンポーネントでアプリケーション全体のルーティングを管理
+ * - シンプルな構造でReact Routerに処理を委譲
  */
-export function App(): React.ReactElement {
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white p-4">
-        <h1 className="text-2xl font-bold">
-          🎮 モンスター収集ゲーム
-        </h1>
-        <p className="mt-1 text-blue-100">
-          プログラミング学習用プロジェクト
-        </p>
-      </header>
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-4">
-            開発中...
-          </h2>
-          <p className="text-gray-600">
-            MVP実装: モンスターCRUD機能
-          </p>
-        </div>
-      </main>
-    </div>
-  );
+export function App() {
+  return <Router />;
 }
