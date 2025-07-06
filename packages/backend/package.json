@@ -8,6 +8,7 @@
     "build": "wrangler build",
     "deploy": "wrangler deploy",
     "test": "vitest run",
+    "test:unit": "vitest run src/__tests__/api/ src/__tests__/db/",
     "test:coverage": "vitest --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
