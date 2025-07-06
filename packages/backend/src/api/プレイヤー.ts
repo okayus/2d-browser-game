@@ -14,6 +14,9 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { プレイヤー } from '../db/スキーマ';
 import { nanoid } from 'nanoid'; // 一意IDの生成用
+import type { データベース型 } from '../db/型定義';
+import { ロガー } from '../utils/ロガー';
+// import type { プレイヤー応答, プレイヤー一覧応答, エラー応答 } from '@monster-game/shared'; // 将来の実装で使用
 
 // プレイヤー作成リクエストの検証スキーマ
 const プレイヤー作成スキーマ = z.object({
@@ -28,10 +31,15 @@ const プレイヤーidスキーマ = z.object({
 /**
  * プレイヤー関連のルーターを作成
  * 
- * @param db - データベース接続インスタンス
+ * 初学者向けメモ：
+ * - データベース型を明示的に指定することで型安全性を確保
+ * - この関数内でのデータベース操作はすべて型チェックされる
+ * - IDEでオートコンプリートが効くようになる
+ * 
+ * @param db - 型安全なデータベース接続インスタンス
  * @returns Honoルーターインスタンス
  */
-export function プレイヤールーター(db: any) {
+export function プレイヤールーター(db: データベース型) {
   const app = new Hono();
 
   /**
@@ -52,7 +60,7 @@ export function プレイヤールーター(db: any) {
       const 現在時刻 = new Date();
       
       // データベースに新しいプレイヤーを登録
-      const [新しいプレイヤー] = await db
+      const 作成結果 = await db
         .insert(プレイヤー)
         .values({
           id: プレイヤーid,
@@ -61,6 +69,12 @@ export function プレイヤールーター(db: any) {
           更新日時: 現在時刻,
         })
         .returning();
+      
+      // 初学者向けメモ：配列の分割代入で undefined になる可能性をチェック
+      const 新しいプレイヤー = 作成結果[0];
+      if (!新しいプレイヤー) {
+        throw new Error('プレイヤーの作成に失敗しました');
+      }
       
       // 成功レスポンス
       return c.json({
@@ -74,7 +88,7 @@ export function プレイヤールーター(db: any) {
       }, 201);
       
     } catch (error) {
-      console.error('プレイヤー作成エラー:', error);
+      ロガー.エラー('プレイヤー作成エラー', error instanceof Error ? error : new Error(String(error)));
       
       return c.json({
         成功: false,
@@ -122,7 +136,7 @@ export function プレイヤールーター(db: any) {
       });
       
     } catch (error) {
-      console.error('プレイヤー取得エラー:', error);
+      ロガー.エラー('プレイヤー取得エラー', error instanceof Error ? error : new Error(String(error)));
       
       return c.json({
         成功: false,
@@ -159,7 +173,7 @@ export function プレイヤールーター(db: any) {
       });
       
     } catch (error) {
-      console.error('プレイヤー一覧取得エラー:', error);
+      ロガー.エラー('プレイヤー一覧取得エラー', error instanceof Error ? error : new Error(String(error)));
       
       return c.json({
         成功: false,

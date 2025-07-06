@@ -10,14 +10,23 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { migrate } from 'drizzle-orm/d1/migrator';
 import * as schema from './スキーマ';
+import type { データベース型, D1データベース型 } from './型定義';
+import { ロガー } from '../utils/ロガー';
 
 /**
  * データベース接続とマイグレーション実行
  * 
+ * 初学者向けメモ：
+ * - 関数の戻り値型を明示的に指定することで型安全性を確保
+ * - Promise<T> は非同期関数の戻り値型を表す
+ * - 型注釈により、この関数を使用する側で型チェックが効く
+ * 
  * @param d1Database - Cloudflare D1データベースインスタンス
- * @returns Drizzle ORMインスタンス
+ * @returns 型安全なDrizzle ORMインスタンス
  */
-export async function データベース初期化(d1Database: D1Database) {
+export async function データベース初期化(
+  d1Database: D1データベース型
+): Promise<データベース型> {
   // Drizzle ORMでD1データベースに接続
   const db = drizzle(d1Database, { schema });
   
@@ -26,10 +35,10 @@ export async function データベース初期化(d1Database: D1Database) {
     // 初学者向けメモ：本番環境では事前にマイグレーションファイルを生成して実行
     await migrate(db, { migrationsFolder: './migrations' });
     
-    console.log('データベースマイグレーション完了');
+    ロガー.情報('データベースマイグレーション完了');
     return db;
   } catch (error) {
-    console.error('データベースマイグレーションエラー:', error);
+    ロガー.エラー('データベースマイグレーションエラー', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -41,7 +50,7 @@ export async function データベース初期化(d1Database: D1Database) {
  * - 開発中のテスト用にサンプルデータを用意
  * - 本番環境では実行しないよう注意
  */
-export async function サンプルデータ投入(db: any) {
+export async function サンプルデータ投入(db: データベース型) {
   try {
     // モンスター種族のサンプルデータ
     await db.insert(schema.モンスター種族).values([
@@ -71,9 +80,9 @@ export async function サンプルデータ投入(db: any) {
       },
     ]);
     
-    console.log('サンプルデータ投入完了');
+    ロガー.情報('サンプルデータ投入完了');
   } catch (error) {
-    console.error('サンプルデータ投入エラー:', error);
+    ロガー.エラー('サンプルデータ投入エラー', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
