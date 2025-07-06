@@ -108,75 +108,75 @@ export function プレイヤー作成() {
   };
 
   return (
-    <div className=\"max-w-2xl mx-auto space-y-6\">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* ページヘッダー */}
-      <div className=\"flex items-center space-x-4\">
+      <div className="flex items-center space-x-4">
         <button
           onClick={() => navigate(-1)}
-          className=\"flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors\"
+          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
-          <ArrowLeft className=\"h-5 w-5\" />
+          <ArrowLeft className="h-5 w-5" />
           <span>戻る</span>
         </button>
-        <div className=\"h-6 w-px bg-gray-300\" />
-        <h1 className=\"text-2xl font-bold text-gray-900\">新しいプレイヤーを作成</h1>
+        <div className="h-6 w-px bg-gray-300" />
+        <h1 className="text-2xl font-bold text-gray-900">新しいプレイヤーを作成</h1>
       </div>
 
       {/* フォーム */}
-      <div className=\"bg-white rounded-lg shadow-md p-6\">
-        <form onSubmit={フォーム送信ハンドラー} className=\"space-y-6\">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <form onSubmit={フォーム送信ハンドラー} className="space-y-6">
           {/* プレイヤー名入力 */}
           <div>
-            <label htmlFor=\"名前\" className=\"block text-sm font-medium text-gray-700 mb-2\">
+            <label htmlFor="名前" className="block text-sm font-medium text-gray-700 mb-2">
               プレイヤー名
             </label>
-            <div className=\"relative\">
-              <div className=\"absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none\">
-                <User className=\"h-5 w-5 text-gray-400\" />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                type=\"text\"
-                id=\"名前\"
-                name=\"名前\"
+                type="text"
+                id="名前"
+                name="名前"
                 value={フォームデータ.名前}
                 onChange={入力変更ハンドラー}
-                className=\"block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
-                placeholder=\"プレイヤー名を入力してください\"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="プレイヤー名を入力してください"
                 maxLength={20}
                 disabled={送信中}
               />
             </div>
-            <p className=\"mt-2 text-sm text-gray-500\">
+            <p className="mt-2 text-sm text-gray-500">
               20文字以内で入力してください（現在: {フォームデータ.名前.length}/20文字）
             </p>
           </div>
 
           {/* エラーメッセージ */}
           {エラー && (
-            <div className=\"bg-red-50 border border-red-200 rounded-md p-4\">
-              <div className=\"flex\">
-                <div className=\"ml-3\">
-                  <p className=\"text-sm text-red-800\">{エラー}</p>
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-red-800">{エラー}</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* 送信ボタン */}
-          <div className=\"flex justify-end\">
+          <div className="flex justify-end">
             <button
-              type=\"submit\"
+              type="submit"
               disabled={送信中 || !フォームデータ.名前.trim()}
-              className=\"inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors\"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {送信中 ? (
                 <>
-                  <Loader2 className=\"h-4 w-4 animate-spin\" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   <span>作成中...</span>
                 </>
               ) : (
                 <>
-                  <User className=\"h-4 w-4\" />
+                  <User className="h-4 w-4" />
                   <span>プレイヤーを作成</span>
                 </>
               )}
@@ -186,11 +186,11 @@ export function プレイヤー作成() {
       </div>
 
       {/* 説明セクション */}
-      <div className=\"bg-gray-50 rounded-lg p-6\">
-        <h2 className=\"text-lg font-semibold text-gray-900 mb-3\">
+      <div className="bg-gray-50 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">
           プレイヤー作成について
         </h2>
-        <div className=\"space-y-2 text-sm text-gray-600\">
+        <div className="space-y-2 text-sm text-gray-600">
           <p>• プレイヤー名は一意である必要はありません</p>
           <p>• 作成後にプレイヤー名を変更することはできません</p>
           <p>• 各プレイヤーは独自のIDを持ち、モンスターを管理できます</p>

@@ -47,23 +47,23 @@ export function レイアウト() {
   ];
 
   return (
-    <div className=\"min-h-screen bg-gray-50 flex flex-col\">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ヘッダー */}
-      <header className=\"bg-white shadow-sm border-b border-gray-200\">
-        <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">
-          <div className=\"flex justify-between items-center h-16\">
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             {/* ロゴ・タイトル */}
-            <div className=\"flex items-center\">
-              <Link to=\"/\" className=\"flex items-center space-x-2\">
-                <Gamepad2 className=\"h-8 w-8 text-blue-600\" />
-                <span className=\"text-xl font-bold text-gray-900\">
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center space-x-2">
+                <Gamepad2 className="h-8 w-8 text-blue-600" />
+                <span className="text-xl font-bold text-gray-900">
                   モンスター収集ゲーム
                 </span>
               </Link>
             </div>
 
             {/* ナビゲーション */}
-            <nav className=\"hidden md:flex space-x-8\">
+            <nav className="hidden md:flex space-x-8">
               {ナビゲーションアイテム.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path || 
@@ -79,7 +79,7 @@ export function レイアウト() {
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                   >
-                    <Icon className=\"h-4 w-4\" />
+                    <Icon className="h-4 w-4" />
                     <span>{item.name}</span>
                   </Link>
                 );
@@ -90,22 +90,22 @@ export function レイアウト() {
       </header>
 
       {/* メインコンテンツ */}
-      <main className=\"flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
 
       {/* フッター */}
-      <footer className=\"bg-white border-t border-gray-200\">
-        <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4\">
-          <div className=\"text-center text-sm text-gray-500\">
+      <footer className="bg-white border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="text-center text-sm text-gray-500">
             <p>© 2024 モンスター収集ゲーム - プログラミング学習用プロジェクト</p>
           </div>
         </div>
       </footer>
 
       {/* モバイル用ナビゲーション */}
-      <div className=\"md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200\">
-        <div className=\"flex justify-around py-2\">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="flex justify-around py-2">
           {ナビゲーションアイテム.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || 
@@ -121,7 +121,7 @@ export function レイアウト() {
                     : 'text-gray-600'
                   }`}
               >
-                <Icon className=\"h-5 w-5\" />
+                <Icon className="h-5 w-5" />
                 <span>{item.name}</span>
               </Link>
             );

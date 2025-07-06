@@ -49,23 +49,23 @@ export function エラーページ() {
   };
 
   return (
-    <div className=\"min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8\">
-      <div className=\"sm:mx-auto sm:w-full sm:max-w-md\">
-        <div className=\"bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10\">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {/* エラーアイコン */}
-          <div className=\"flex justify-center mb-6\">
-            <div className=\"bg-red-100 p-4 rounded-full\">
-              <AlertTriangle className=\"h-12 w-12 text-red-600\" />
+          <div className="flex justify-center mb-6">
+            <div className="bg-red-100 p-4 rounded-full">
+              <AlertTriangle className="h-12 w-12 text-red-600" />
             </div>
           </div>
 
           {/* エラー情報 */}
-          <div className=\"text-center space-y-4\">
-            <h1 className=\"text-2xl font-bold text-gray-900\">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold text-gray-900">
               {ステータスコード === 404 ? 'ページが見つかりません' : 'エラーが発生しました'}
             </h1>
             
-            <p className=\"text-gray-600\">
+            <p className="text-gray-600">
               {ステータスコード === 404 
                 ? 'お探しのページは存在しないか、移動された可能性があります。'
                 : 'アプリケーションで問題が発生しました。'
@@ -73,42 +73,42 @@ export function エラーページ() {
             </p>
 
             {エラーメッセージ && (
-              <div className=\"bg-red-50 border border-red-200 rounded-md p-4 text-left\">
-                <h3 className=\"text-sm font-medium text-red-800 mb-2\">エラー詳細:</h3>
-                <p className=\"text-sm text-red-700\">{エラーメッセージ}</p>
+              <div className="bg-red-50 border border-red-200 rounded-md p-4 text-left">
+                <h3 className="text-sm font-medium text-red-800 mb-2">エラー詳細:</h3>
+                <p className="text-sm text-red-700">{エラーメッセージ}</p>
               </div>
             )}
           </div>
 
           {/* アクションボタン */}
-          <div className=\"mt-8 space-y-3\">
+          <div className="mt-8 space-y-3">
             {/* ホームに戻る */}
             <Link
-              to=\"/\"
-              className=\"w-full flex justify-center items-center space-x-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors\"
+              to="/"
+              className="w-full flex justify-center items-center space-x-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
-              <Home className=\"h-4 w-4\" />
+              <Home className="h-4 w-4" />
               <span>ホームに戻る</span>
             </Link>
 
             {/* ページをリロード */}
             <button
               onClick={ページリロード}
-              className=\"w-full flex justify-center items-center space-x-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors\"
+              className="w-full flex justify-center items-center space-x-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
-              <RefreshCw className=\"h-4 w-4\" />
+              <RefreshCw className="h-4 w-4" />
               <span>ページを再読み込み</span>
             </button>
           </div>
 
           {/* 開発環境での詳細情報 */}
           {process.env.NODE_ENV === 'development' && エラー詳細 && (
-            <details className=\"mt-6\">
-              <summary className=\"text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900\">
+            <details className="mt-6">
+              <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
                 開発者向け詳細情報（本番環境では非表示）
               </summary>
-              <div className=\"mt-2 bg-gray-100 rounded-md p-3\">
-                <pre className=\"text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-40\">
+              <div className="mt-2 bg-gray-100 rounded-md p-3">
+                <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-40">
                   {エラー詳細}
                 </pre>
               </div>
@@ -116,8 +116,8 @@ export function エラーページ() {
           )}
 
           {/* サポート情報 */}
-          <div className=\"mt-6 text-center\">
-            <p className=\"text-xs text-gray-500\">
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
               問題が継続する場合は、ブラウザのキャッシュをクリアするか、
               <br />
               開発者にお問い合わせください。

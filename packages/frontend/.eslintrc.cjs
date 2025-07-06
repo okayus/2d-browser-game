@@ -1,20 +1,18 @@
 module.exports = {
-  extends: ['../../.eslintrc.js'],
-  env: {
-    browser: true,
-  },
-  settings: {
-    react: {
-      version: 'detect',
-    },
-  },
-  overrides: [
-    {
-      files: ['**/*.tsx'],
-      extends: ['plugin:react/recommended', 'plugin:react-hooks/recommended'],
-      rules: {
-        'react/react-in-jsx-scope': 'off', // React 17+では不要
-      },
-    },
+  root: true,
+  env: { browser: true, es2020: true },
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react-hooks/recommended',
   ],
+  ignorePatterns: ['dist', '.eslintrc.cjs'],
+  parser: '@typescript-eslint/parser',
+  plugins: ['react-refresh'],
+  rules: {
+    // 'react-refresh/only-export-components': [
+    //   'warn',
+    //   { allowConstantExport: true },
+    // ],
+  },
 };
