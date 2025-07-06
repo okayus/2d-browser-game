@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "description": "モンスター収集型ゲーム - プログラミング学習用プロジェクト",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "dev": "pnpm --parallel run dev",
     "build": "pnpm --parallel run build",
@@ -18,6 +15,10 @@
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0",
     "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.0.0"
   },
   "packageManager": "pnpm@8.0.0",

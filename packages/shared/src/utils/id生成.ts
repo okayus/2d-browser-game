@@ -9,7 +9,7 @@
  */
 export function uuid生成(): string {
   // Web Crypto APIを使用してセキュアなランダム値を生成
-  const crypto = globalThis.crypto;
+  const crypto = globalThis.crypto as Crypto | undefined;
   if (!crypto) {
     throw new Error('Crypto APIが利用できません');
   }

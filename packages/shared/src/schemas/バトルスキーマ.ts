@@ -65,8 +65,4 @@ export const バトルアクション結果スキーマ = z.object({
   }).optional(),
 });
 
-// 型推論のためのtype alias
-export type 野生モンスターレスポンス = z.infer<typeof 野生モンスタースキーマ>;
-export type バトル情報レスポンス = z.infer<typeof バトル情報スキーマ>;
-export type バトルアクション実行リクエスト = z.infer<typeof バトルアクション実行スキーマ>;
-export type バトルアクション結果レスポンス = z.infer<typeof バトルアクション結果スキーマ>;
+// 型推論は各パッケージで必要に応じて実行

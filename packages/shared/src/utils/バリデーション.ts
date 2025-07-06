@@ -3,7 +3,7 @@
  * 初学者向け: 型安全なバリデーション処理の実装例
  */
 
-import type { z } from 'zod';
+import { z } from 'zod';
 
 /**
  * Zodスキーマによるバリデーション結果
