@@ -9,7 +9,7 @@ import React from 'react';
  * アプリケーションのメインコンポーネント
  * 全体のレイアウトとルーティングを管理
  */
-export function App(): JSX.Element {
+export function App(): React.ReactElement {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-blue-600 text-white p-4">
