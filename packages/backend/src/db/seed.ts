@@ -71,7 +71,7 @@ const 初期モンスター種族 = [
  * 
  * @param db - Drizzle ORMのデータベースインスタンス
  */
-export async function 初期データ投入(db: any) {
+export async function 初期データ投入(db: unknown) {
   try {
     // 既存データのチェック
     const 既存種族 = await db
@@ -112,7 +112,7 @@ export async function 初期データ投入(db: any) {
  * - 本番環境では使用しないこと！
  * - 外部キー制約を考慮した削除順序
  */
-export async function データリセット(db: any) {
+export async function データリセット(db: unknown) {
   console.log('⚠️  データベースをリセットします...');
   
   try {

@@ -198,7 +198,7 @@ app.get(
 
     try {
       // 基本のクエリを構築
-      let whereConditions = [eq(schema.所持モンスター.プレイヤーid, playerId)];
+      const whereConditions = [eq(schema.所持モンスター.プレイヤーid, playerId)];
       
       // 種族IDでフィルタリング
       if (種族ID) {
