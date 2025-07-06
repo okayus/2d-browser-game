@@ -9,13 +9,14 @@
  */
 
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { プレイヤー } from '../db/スキーマ';
+import { プレイヤー, モンスター種族, 所持モンスター } from '../db/スキーマ';
 import { nanoid } from 'nanoid'; // 一意IDの生成用
 import type { データベース型 } from '../db/型定義';
 import { ロガー } from '../utils/ロガー';
+import { uuid生成 } from '@monster-game/shared';
 // import type { プレイヤー応答, プレイヤー一覧応答, エラー応答 } from '@monster-game/shared'; // 将来の実装で使用
 
 // プレイヤー作成リクエストの検証スキーマ
@@ -50,6 +51,7 @@ export function プレイヤールーター(db: データベース型) {
    * - 新しいプレイヤーアカウントを作成
    * - 名前の重複チェックは今回は省略（MVP版）
    * - 作成成功時はプレイヤー情報を返す
+   * - 作成後に初期モンスターを1体付与
    */
   app.post('/', zValidator('json', プレイヤー作成スキーマ), async (c) => {
     try {
@@ -76,6 +78,9 @@ export function プレイヤールーター(db: データベース型) {
         throw new Error('プレイヤーの作成に失敗しました');
       }
       
+      // 初期モンスターを付与
+      const 初期モンスター = await 初期モンスター付与(db, プレイヤーid);
+      
       // 成功レスポンス
       return c.json({
         成功: true,
@@ -84,6 +89,13 @@ export function プレイヤールーター(db: データベース型) {
           id: 新しいプレイヤー.id,
           名前: 新しいプレイヤー.名前,
           作成日時: 新しいプレイヤー.作成日時,
+          初期モンスター: 初期モンスター ? {
+            id: 初期モンスター.id,
+            種族名: 初期モンスター.種族名,
+            ニックネーム: 初期モンスター.ニックネーム,
+            現在HP: 初期モンスター.現在HP,
+            最大HP: 初期モンスター.最大HP,
+          } : null,
         },
       }, 201);
       
@@ -184,6 +196,82 @@ export function プレイヤールーター(db: データベース型) {
   });
 
   return app;
+}
+
+/**
+ * 初期モンスター付与関数
+ * 
+ * 初学者向けメモ：
+ * - 新規プレイヤーにスターターモンスターを1体付与
+ * - でんきネズミ、ほのおトカゲ、くさモグラの3種類からランダム選択
+ * - 選択されたモンスターを所持モンスターテーブルに追加
+ * 
+ * @param db - データベース接続インスタンス
+ * @param プレイヤーid - 対象プレイヤーのID
+ * @returns 付与されたモンスターの情報、失敗時はnull
+ */
+async function 初期モンスター付与(db: データベース型, プレイヤーid: string) {
+  try {
+    // スターターモンスターの種族名を定義
+    const スターター種族名 = ['でんきネズミ', 'ほのおトカゲ', 'くさモグラ'];
+    
+    // データベースからスターター種族を取得
+    const スターター種族一覧 = await db
+      .select()
+      .from(モンスター種族)
+      .where(inArray(モンスター種族.名前, スターター種族名));
+    
+    if (スターター種族一覧.length === 0) {
+      ロガー.警告('スターターモンスターが見つかりません', { スターター種族名 });
+      return null;
+    }
+    
+    // ランダムに1体選択
+    const ランダムインデックス = Math.floor(Math.random() * スターター種族一覧.length);
+    const 選択された種族 = スターター種族一覧[ランダムインデックス];
+    
+    if (!選択された種族) {
+      ロガー.エラー('スターターモンスターの選択に失敗しました', new Error('選択された種族がundefinedです'));
+      return null;
+    }
+    
+    // 新しいモンスターを作成
+    const 新規モンスター = {
+      id: uuid生成(),
+      プレイヤーid,
+      種族id: 選択された種族.id,
+      ニックネーム: 選択された種族.名前, // デフォルトは種族名
+      現在hp: 選択された種族.基本hp,
+      最大hp: 選択された種族.基本hp,
+      取得日時: new Date(),
+      更新日時: new Date(),
+    };
+    
+    // データベースに挿入
+    await db.insert(所持モンスター).values(新規モンスター);
+    
+    ロガー.情報('初期モンスター付与成功', {
+      プレイヤーID: プレイヤーid,
+      モンスターID: 新規モンスター.id,
+      種族名: 選択された種族.名前,
+    });
+    
+    // 付与されたモンスターの情報を返す
+    return {
+      id: 新規モンスター.id,
+      種族名: 選択された種族.名前,
+      ニックネーム: 新規モンスター.ニックネーム,
+      現在HP: 新規モンスター.現在hp,
+      最大HP: 新規モンスター.最大hp,
+      取得日時: 新規モンスター.取得日時,
+    };
+    
+  } catch (error) {
+    ロガー.エラー('初期モンスター付与中のエラー', error instanceof Error ? error : new Error(String(error)), {
+      プレイヤーID: プレイヤーid,
+    });
+    return null;
+  }
 }
 
 /**

@@ -9,9 +9,12 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { drizzle } from 'drizzle-orm/d1';
+import * as schema from './db/スキーマ';
 import { データベース初期化 } from './db/マイグレーション';
 import { ロガー } from './utils/ロガー';
-// import { プレイヤールーター } from './api/プレイヤー'; // 一時的にコメントアウト
+import { プレイヤールーター } from './api/プレイヤー';
+import モンスターAPI from './api/モンスター';
 
 // Cloudflare Workers の環境変数型定義
 type Bindings = {
@@ -60,27 +63,31 @@ app.get('/health', (c) => {
  * APIルートの設定
  * 
  * 初学者向けメモ：
- * - /api/players 以下のルートをプレイヤールーターに委譲
- * - データベース接続をルーターに渡す
+ * - 各APIルーターをマウント
+ * - データベース初期化も含む
  */
-/**
- * 一時的な実装: 直接ルートを定義
- * 
- * 初学者向けメモ：
- * - データベース接続とルーターの統合を簡略化
- * - 今後のリファクタリングで改善予定
- */
-app.get('/api/players', async (c) => {
+app.use('/api/*', async (c, next) => {
+  // データベース初期化
   await データベース初期化(c.env.DB);
-  // 一時的に空配列を返す（今後実装）
-  return c.json({ 成功: true, データ: [], 件数: 0 });
+  await next();
 });
 
-app.post('/api/players', async (c) => {
-  await データベース初期化(c.env.DB);
-  // 一時的な実装（今後プレイヤールーターに移行）
-  return c.json({ 成功: true, メッセージ: 'プレイヤー作成（実装中）' });
-});
+// プレイヤーAPIのマウント
+app.route('/api/players', (() => {
+  const プレイヤーApp = new Hono<{ Bindings: Bindings }>();
+  
+  // 全てのプレイヤーエンドポイント
+  プレイヤーApp.all('/*', async (c) => {
+    const db = drizzle(c.env.DB, { schema });
+    const router = プレイヤールーター(db);
+    return router.fetch(c.req.raw, c.env);
+  });
+  
+  return プレイヤーApp;
+})());
+
+// モンスターAPIのマウント
+app.route('/api', モンスターAPI);
 
 /**
  * 404エラーハンドリング
@@ -92,7 +99,10 @@ app.post('/api/players', async (c) => {
 app.notFound((c) => {
   return c.json({
     成功: false,
-    メッセージ: '指定されたエンドポイントが見つかりません',
+    エラー: {
+      コード: 'NOT_FOUND',
+      メッセージ: '指定されたエンドポイントが見つかりません',
+    },
     リクエストURL: c.req.url,
   }, 404);
 });
@@ -109,10 +119,31 @@ app.onError((error, c) => {
   
   return c.json({
     成功: false,
-    メッセージ: '内部サーバーエラーが発生しました',
-    エラー: error.message,
+    エラー: {
+      コード: 'INTERNAL_ERROR',
+      メッセージ: '内部サーバーエラーが発生しました',
+    },
   }, 500);
 });
 
 // Cloudflare Workers のエクスポート
 export default app;
+
+/**
+ * 初学者向けメモ：エントリーポイントの設計
+ * 
+ * 1. ミドルウェアの順序
+ *    - CORS設定は最初に実行
+ *    - データベース初期化は各APIアクセス前
+ *    - エラーハンドリングは最後
+ * 
+ * 2. ルーティング設計
+ *    - /health: ヘルスチェック
+ *    - /api/players: プレイヤー関連
+ *    - /api/monsters: モンスター関連
+ * 
+ * 3. エラーハンドリング
+ *    - 404: ルートが見つからない
+ *    - 500: サーバーエラー
+ *    - 個別のAPIエラーは各ルーターで処理
+ */

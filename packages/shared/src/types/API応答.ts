@@ -91,6 +91,25 @@ export interface 成功応答<T> extends API応答<T> {
 }
 
 /**
+ * HTTPレスポンス型
+ * 
+ * 初学者向けメモ：
+ * - 統一されたHTTPレスポンス形式
+ * - エラーコードを含む構造化エラー
+ * - 型安全性を保ちつつ柔軟な実装
+ */
+export interface HTTPレスポンス型<T = unknown> {
+  readonly 成功: boolean;
+  readonly データ?: T;
+  readonly メッセージ?: string;
+  readonly 件数?: number;
+  readonly エラー?: {
+    readonly コード: string;
+    readonly メッセージ: string;
+  };
+}
+
+/**
  * 初学者向けメモ：型安全なAPI設計の利点
  * 
  * 1. コンパイル時チェック

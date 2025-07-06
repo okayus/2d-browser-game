@@ -14,11 +14,11 @@
 
 ## 📅 実装スケジュール（4週間）
 
-### Week 1: 基盤構築
-- [ ] プロジェクトセットアップ
-- [ ] データベーススキーマ作成
-- [ ] 基本的なAPI実装（プレイヤー作成）
-- [ ] フロントエンドルーティング設定
+### Week 1: 基盤構築 ✅ 完了
+- [x] プロジェクトセットアップ
+- [x] データベーススキーマ作成
+- [x] 基本的なAPI実装（プレイヤー作成）
+- [x] フロントエンドルーティング設定
 
 ### Week 2: CRUD API実装
 - [ ] モンスター獲得API（Create）
@@ -40,65 +40,65 @@
 
 ## 🔧 技術実装計画
 
-### 1. プロジェクトセットアップ
+### 1. プロジェクトセットアップ ✅ 完了
 
 #### 1.1 環境設定
-- [ ] Node.js 18+ のインストール確認
-- [ ] pnpm の設定
-- [ ] TypeScript strict mode の設定
-- [ ] ESLint + Prettier の設定
+- [x] Node.js 18+ のインストール確認
+- [x] pnpm の設定
+- [x] TypeScript strict mode の設定
+- [x] ESLint + Prettier の設定
 
 #### 1.2 モノレポ構成
 ```
 packages/
-├── frontend/     # React + TypeScript
-├── backend/      # Hono API
-└── shared/       # 共通型定義
+├── frontend/     # React + TypeScript ✅
+├── backend/      # Hono API ✅
+└── shared/       # 共通型定義 ✅
 ```
 
 #### 1.3 開発環境
-- [ ] `pnpm dev` で開発サーバー起動
-- [ ] Hot reload の設定
-- [ ] 環境変数の管理（.env）
+- [x] `pnpm dev` で開発サーバー起動
+- [x] Hot reload の設定
+- [x] 環境変数の管理（.env）
 
-### 2. データベース設計・実装
+### 2. データベース設計・実装 ✅ 完了
 
-#### 2.1 スキーマ作成
+#### 2.1 スキーマ作成 ✅ 実装済み
 ```sql
 -- プレイヤーテーブル
-CREATE TABLE players (
+CREATE TABLE プレイヤー (
   id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  名前 TEXT NOT NULL,
+  作成日時 TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- モンスター種族マスタ
-CREATE TABLE monster_species (
+CREATE TABLE モンスター種族 (
   id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  base_hp INTEGER NOT NULL,
-  rarity TEXT NOT NULL
+  名前 TEXT NOT NULL,
+  基礎HP INTEGER NOT NULL,
+  レアリティ TEXT NOT NULL
 );
 
 -- 所持モンスターテーブル
-CREATE TABLE owned_monsters (
+CREATE TABLE 所持モンスター (
   id TEXT PRIMARY KEY,
-  player_id TEXT NOT NULL,
-  species_id TEXT NOT NULL,
-  nickname TEXT,
-  current_hp INTEGER NOT NULL,
-  max_hp INTEGER NOT NULL,
-  captured_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (player_id) REFERENCES players(id),
-  FOREIGN KEY (species_id) REFERENCES monster_species(id)
+  プレイヤーID TEXT NOT NULL,
+  種族ID TEXT NOT NULL,
+  ニックネーム TEXT,
+  現在HP INTEGER NOT NULL,
+  最大HP INTEGER NOT NULL,
+  捕獲日時 TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (プレイヤーID) REFERENCES プレイヤー(id),
+  FOREIGN KEY (種族ID) REFERENCES モンスター種族(id)
 );
 ```
 
 #### 2.2 マイグレーション
-- [ ] Drizzle ORM の設定
-- [ ] 開発環境（SQLite）の設定
-- [ ] 本番環境（Cloudflare D1）の設定
-- [ ] 初期データの投入
+- [x] Drizzle ORM の設定
+- [x] 開発環境（SQLite）の設定
+- [x] 本番環境（Cloudflare D1）の設定
+- [ ] 初期データの投入（Week2で実装）
 
 #### 2.3 初期データ作成
 ```sql
@@ -111,15 +111,15 @@ INSERT INTO monster_species (id, name, base_hp, rarity) VALUES
 
 ### 3. バックエンドAPI実装
 
-#### 3.1 プレイヤー管理
-- [ ] **POST /api/players** - プレイヤー作成
-  - 名前のバリデーション（3-20文字）
-  - 初期モンスター1体を自動付与
-  - レスポンス: プレイヤーID + 初期モンスター情報
+#### 3.1 プレイヤー管理 ✅ 部分完了
+- [x] **POST /api/players** - プレイヤー作成
+  - 名前のバリデーション（1-20文字）
+  - レスポンス: プレイヤーID + 基本情報
+  - 初期モンスター付与は未実装（Week2で対応）
 
-- [ ] **GET /api/players/:id** - プレイヤー情報取得
+- [x] **GET /api/players/:id** - プレイヤー情報取得
   - プレイヤーの基本情報
-  - 所持モンスター数
+  - 所持モンスター数は未実装（Week2で対応）
 
 #### 3.2 モンスター管理
 - [ ] **POST /api/players/:playerId/monsters** - モンスター獲得
@@ -157,12 +157,13 @@ INSERT INTO monster_species (id, name, base_hp, rarity) VALUES
 
 ### 4. フロントエンド実装
 
-#### 4.1 ルーティング設定
+#### 4.1 ルーティング設定 ✅ 完了
 ```typescript
-// React Router構成
-/                    # スタート画面
-/game/:playerId      # メインゲーム画面
-/battle/:battleId    # バトル画面
+// React Router構成（実装済み）
+/                    # ホーム画面
+/players/new         # プレイヤー作成
+/players/:id         # プレイヤー詳細
+/monsters            # モンスター一覧（UI準備済み）
 ```
 
 #### 4.2 コンポーネント設計
@@ -291,11 +292,21 @@ test('モンスターCRUDフロー', async ({ page }) => {
 - [ ] 自動デプロイ設定
 
 #### 6.3 監視・ログ
-- [ ] 基本的なエラーログ
+- [x] 基本的なエラーログ（ロガーシステム実装済み）
 - [ ] パフォーマンスモニタリング
 - [ ] 使用状況の確認
 
 ## 📊 進捗管理
+
+### Week1 完了内容
+- ✅ モノレポ構造の構築
+- ✅ TypeScript/ESLint設定（any型禁止）
+- ✅ CI/CDパイプライン構築
+- ✅ データベーススキーマ設計
+- ✅ プレイヤーCRUD API（作成・取得）
+- ✅ フロントエンド基盤（React Router）
+- ✅ プレイヤー管理UI実装
+- ✅ 型エラー/ESLintエラー完全解消
 
 ### 進捗確認方法
 - [ ] 各週末に進捗レビュー
