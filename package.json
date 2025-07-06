@@ -7,6 +7,13 @@
     "dev": "pnpm --parallel run dev",
     "build": "pnpm --parallel run build",
     "test": "pnpm --parallel run test",
+    "test:unit": "pnpm --parallel run test",
+    "test:integration": "pnpm --filter @monster-game/backend test -- api-integration",
+    "test:performance": "pnpm --filter @monster-game/backend test -- performance",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
     "lint": "pnpm --parallel run lint",
     "typecheck": "pnpm --parallel run typecheck",
     "clean": "pnpm --parallel run clean"
@@ -19,7 +26,11 @@
     "@typescript-eslint/parser": "^6.0.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "@playwright/test": "^1.40.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/jest-dom": "^6.1.0",
+    "@testing-library/user-event": "^14.5.0"
   },
   "packageManager": "pnpm@8.0.0",
   "engines": {
