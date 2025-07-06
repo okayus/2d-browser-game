@@ -7,16 +7,13 @@ module.exports = {
   extends: [
     'eslint:recommended',
   ],
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-    project: ['./tsconfig.json', './packages/*/tsconfig.json'],
   },
   rules: {
     // Basic JavaScript rules
-    'no-unused-vars': 'off', // TypeScriptで管理
+    'no-unused-vars': 'off',
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
     'prefer-const': 'error',
     'no-var': 'error',
@@ -27,5 +24,25 @@ module.exports = {
     '.eslintrc.js',
     '*.config.js',
     '*.config.ts',
+  ],
+  overrides: [
+    {
+      files: ['**/*.ts', '**/*.tsx'],
+      parser: '@typescript-eslint/parser',
+      plugins: ['@typescript-eslint'],
+      extends: [
+        'eslint:recommended',
+        'plugin:@typescript-eslint/recommended',
+      ],
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        project: './tsconfig.json',
+      },
+      rules: {
+        '@typescript-eslint/no-unused-vars': 'error',
+        'no-unused-vars': 'off',
+      },
+    },
   ],
 };
