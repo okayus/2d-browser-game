@@ -1,0 +1,28 @@
+{
+  "name": "monster-collection-game",
+  "version": "0.1.0",
+  "description": "モンスター収集型ゲーム - プログラミング学習用プロジェクト",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel run dev",
+    "build": "pnpm --parallel run build",
+    "test": "pnpm --parallel run test",
+    "lint": "pnpm --parallel run lint",
+    "typecheck": "pnpm --parallel run typecheck",
+    "clean": "pnpm --parallel run clean"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "packageManager": "pnpm@8.0.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

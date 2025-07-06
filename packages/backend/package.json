@@ -1,0 +1,34 @@
+{
+  "name": "@monster-game/backend",
+  "version": "0.1.0",
+  "description": "モンスター収集ゲーム - バックエンドAPI",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler build",
+    "deploy": "wrangler deploy",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "hono": "^3.12.0",
+    "drizzle-orm": "^0.29.0",
+    "zod": "^3.22.0",
+    "@monster-game/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "wrangler": "^3.15.0",
+    "drizzle-kit": "^0.20.0",
+    "better-sqlite3": "^9.0.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "vitest": "^1.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
+  }
+}

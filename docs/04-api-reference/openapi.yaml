@@ -1,0 +1,827 @@
+openapi: 3.0.3
+info:
+  title: ポケモンライクゲーム API
+  description: |
+    初学者向けポケモンライクゲームのバックエンドAPI仕様書
+    
+    このAPIは学習目的で作成されており、以下の特徴があります：
+    - 日本語変数名・コメントを使用
+    - TypeScript型安全性重視
+    - 初学者にわかりやすい設計
+    
+    ## 認証
+    現在は認証なしでアクセス可能（将来的にJWT認証を実装予定）
+    
+    ## エラーハンドリング
+    全てのエラーレスポンスは統一フォーマットに従います。
+    
+  version: 2.0.0
+  contact:
+    name: プロジェクト開発チーム
+    url: https://github.com/okayus/pokemon-like-game-tutorial
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8787
+    description: ローカル開発環境
+  - url: https://pokemon-game-api.workers.dev
+    description: 本番環境（予定）
+
+paths:
+  /:
+    get:
+      summary: API情報取得
+      description: APIの基本情報を取得します
+      responses:
+        '200':
+          description: API情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pokemon-like Game API"
+
+  /api/health:
+    get:
+      summary: ヘルスチェック
+      description: APIサーバーの状態を確認します
+      responses:
+        '200':
+          description: サーバー正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-07-05T10:30:00.000Z"
+
+  # ポケモン関連 API
+  /api/pokemon/species:
+    get:
+      summary: 全ポケモン種族データ取得
+      description: ゲーム内で利用可能な全ポケモンの種族データを取得します
+      tags:
+        - Pokemon
+      responses:
+        '200':
+          description: ポケモン種族データ一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PokemonSpecies'
+                  count:
+                    type: integer
+                    example: 151
+
+  /api/pokemon/species/{speciesId}:
+    get:
+      summary: 特定ポケモン種族データ取得
+      description: 指定されたIDのポケモン種族データを取得します
+      tags:
+        - Pokemon
+      parameters:
+        - name: speciesId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "pikachu"
+      responses:
+        '200':
+          description: ポケモン種族データ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PokemonSpecies'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/pokemon/owned/{playerId}:
+    get:
+      summary: プレイヤーの所有ポケモン取得
+      description: 指定されたプレイヤーが所有するポケモンの一覧を取得します
+      tags:
+        - Pokemon
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "player123"
+        - name: speciesFilter
+          in: query
+          schema:
+            type: string
+          description: 種族名でフィルタリング
+        - name: levelMin
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: 最低レベル
+        - name: levelMax
+          in: query
+          schema:
+            type: integer
+            maximum: 100
+          description: 最高レベル
+      responses:
+        '200':
+          description: 所有ポケモン一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OwnedPokemon'
+                  count:
+                    type: integer
+                    example: 6
+
+  /api/pokemon/catch/{playerId}:
+    post:
+      summary: ポケモン捕獲
+      description: 新しいポケモンを捕獲します
+      tags:
+        - Pokemon
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "player123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                speciesId:
+                  type: string
+                  example: "pikachu"
+                nickname:
+                  type: string
+                  maxLength: 20
+                  example: "ピカピカ"
+                level:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  example: 5
+              required:
+                - speciesId
+      responses:
+        '201':
+          description: ポケモン捕獲成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/OwnedPokemon'
+                  message:
+                    type: string
+                    example: "ポケモンを捕獲しました！"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/pokemon/party/{playerId}:
+    get:
+      summary: パーティ取得
+      description: プレイヤーの現在のパーティ（戦闘用ポケモン6匹）を取得します
+      tags:
+        - Pokemon
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "player123"
+      responses:
+        '200':
+          description: パーティ情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PartyMember'
+                    maxItems: 6
+
+    put:
+      summary: パーティ編成
+      description: プレイヤーのパーティを編成します
+      tags:
+        - Pokemon
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "player123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pokemonIds:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 6
+                  example: ["pokemon1", "pokemon2", "pokemon3"]
+              required:
+                - pokemonIds
+      responses:
+        '200':
+          description: パーティ編成完了
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "パーティを編成しました"
+
+  # アイテム関連 API
+  /api/items/master:
+    get:
+      summary: 全アイテムマスターデータ取得
+      description: ゲーム内で利用可能な全アイテムのマスターデータを取得します
+      tags:
+        - Items
+      responses:
+        '200':
+          description: アイテムマスターデータ一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ItemMaster'
+                  count:
+                    type: integer
+                    example: 50
+
+  /api/items/master/{itemId}:
+    get:
+      summary: 特定アイテムマスターデータ取得
+      description: 指定されたIDのアイテムマスターデータを取得します
+      tags:
+        - Items
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "potion"
+      responses:
+        '200':
+          description: アイテムマスターデータ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ItemMaster'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/items/category/{category}:
+    get:
+      summary: カテゴリ別アイテム取得
+      description: 指定されたカテゴリのアイテム一覧を取得します
+      tags:
+        - Items
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: ["かいふく", "ボール", "せんとう", "たいせつ"]
+          example: "かいふく"
+      responses:
+        '200':
+          description: カテゴリ別アイテム一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ItemMaster'
+
+  /api/items/inventory/{playerId}:
+    get:
+      summary: プレイヤーインベントリ取得
+      description: プレイヤーが所持しているアイテムの一覧を取得します
+      tags:
+        - Items
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "player123"
+      responses:
+        '200':
+          description: インベントリ情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryItem'
+
+  # バトル関連 API
+  /api/battle/start:
+    post:
+      summary: バトル開始
+      description: 新しいバトルセッションを開始します
+      tags:
+        - Battle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerId:
+                  type: string
+                  example: "player123"
+                playerPokemonId:
+                  type: string
+                  example: "pokemon1"
+                enemyPokemonId:
+                  type: string
+                  example: "wild_pikachu"
+                battleType:
+                  type: string
+                  enum: ["野生", "トレーナー"]
+                  example: "野生"
+              required:
+                - playerId
+                - playerPokemonId
+                - enemyPokemonId
+                - battleType
+      responses:
+        '201':
+          description: バトル開始成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/BattleSession'
+
+  /api/battle/{battleId}/use-move:
+    post:
+      summary: 技使用
+      description: バトル中に技を使用します
+      tags:
+        - Battle
+      parameters:
+        - name: battleId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "battle123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                moveId:
+                  type: integer
+                  example: 1
+                targetType:
+                  type: string
+                  enum: ["enemy", "self"]
+                  example: "enemy"
+              required:
+                - moveId
+                - targetType
+      responses:
+        '200':
+          description: 技使用結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      damage:
+                        type: integer
+                        example: 25
+                      message:
+                        type: string
+                        example: "ピカチュウは10まんボルトを使った！"
+                      battleStatus:
+                        $ref: '#/components/schemas/BattleSession'
+
+  # プレイヤー関連 API
+  /api/player/{playerId}:
+    get:
+      summary: プレイヤー情報取得
+      description: プレイヤーの基本情報を取得します（現在は簡易版実装）
+      tags:
+        - Player
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "player123"
+      responses:
+        '200':
+          description: プレイヤー情報
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+
+  /api/player:
+    post:
+      summary: プレイヤー作成
+      description: 新しいプレイヤーを作成します（現在は簡易版実装）
+      tags:
+        - Player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 20
+                  example: "プレイヤー"
+              required:
+                - name
+      responses:
+        '201':
+          description: プレイヤー作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+
+components:
+  schemas:
+    # ポケモン関連スキーマ
+    PokemonSpecies:
+      type: object
+      properties:
+        species_id:
+          type: string
+          example: "pikachu"
+        name:
+          type: string
+          example: "ピカチュウ"
+        type1:
+          type: string
+          example: "でんき"
+        type2:
+          type: string
+          nullable: true
+          example: null
+        base_hp:
+          type: integer
+          example: 35
+        base_attack:
+          type: integer
+          example: 55
+        base_defense:
+          type: integer
+          example: 40
+        base_speed:
+          type: integer
+          example: 90
+        sprite_url:
+          type: string
+          example: "/sprites/pikachu.png"
+        description:
+          type: string
+          example: "ねずみポケモン"
+
+    OwnedPokemon:
+      type: object
+      properties:
+        pokemon_id:
+          type: string
+          example: "pokemon123"
+        player_id:
+          type: string
+          example: "player123"
+        species_id:
+          type: string
+          example: "pikachu"
+        nickname:
+          type: string
+          example: "ピカピカ"
+        level:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 25
+        experience:
+          type: integer
+          example: 15000
+        current_hp:
+          type: integer
+          example: 68
+        max_hp:
+          type: integer
+          example: 75
+        attack:
+          type: integer
+          example: 67
+        defense:
+          type: integer
+          example: 52
+        speed:
+          type: integer
+          example: 102
+        caught_at:
+          type: string
+          format: date-time
+          example: "2025-07-05T10:30:00.000Z"
+
+    PartyMember:
+      type: object
+      properties:
+        position:
+          type: integer
+          minimum: 1
+          maximum: 6
+          example: 1
+        pokemon:
+          $ref: '#/components/schemas/OwnedPokemon'
+
+    # アイテム関連スキーマ
+    ItemMaster:
+      type: object
+      properties:
+        item_id:
+          type: string
+          example: "potion"
+        name:
+          type: string
+          example: "キズぐすり"
+        description:
+          type: string
+          example: "ポケモンのHPを20回復する"
+        category:
+          type: string
+          enum: ["かいふく", "ボール", "せんとう", "たいせつ"]
+          example: "かいふく"
+        price:
+          type: integer
+          example: 300
+        sprite_url:
+          type: string
+          example: "/sprites/items/potion.png"
+        effect_type:
+          type: string
+          example: "heal"
+        effect_value:
+          type: integer
+          example: 20
+
+    InventoryItem:
+      type: object
+      properties:
+        item_id:
+          type: string
+          example: "potion"
+        quantity:
+          type: integer
+          minimum: 0
+          example: 5
+        item_data:
+          $ref: '#/components/schemas/ItemMaster'
+
+    # バトル関連スキーマ
+    BattleSession:
+      type: object
+      properties:
+        battle_id:
+          type: string
+          example: "battle123"
+        player_id:
+          type: string
+          example: "player123"
+        player_pokemon_id:
+          type: string
+          example: "pokemon1"
+        enemy_pokemon_id:
+          type: string
+          example: "wild_pikachu"
+        battle_type:
+          type: string
+          enum: ["野生", "トレーナー"]
+          example: "野生"
+        status:
+          type: string
+          enum: ["進行中", "終了"]
+          example: "進行中"
+        current_turn:
+          type: integer
+          example: 3
+        phase:
+          type: string
+          example: "コマンド選択"
+        winner:
+          type: string
+          enum: ["味方", "敵", "引き分け"]
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-07-05T10:30:00.000Z"
+
+    # プレイヤー関連スキーマ
+    Player:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "player123"
+        name:
+          type: string
+          example: "プレイヤー"
+        position:
+          type: object
+          properties:
+            x:
+              type: integer
+              example: 7
+            y:
+              type: integer
+              example: 5
+        direction:
+          type: string
+          enum: ["up", "down", "left", "right"]
+          example: "down"
+        sprite:
+          type: string
+          example: "player"
+
+    # エラー関連スキーマ
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "入力値が不正です"
+            details:
+              type: object
+              additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: リクエストが不正です
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "BAD_REQUEST"
+              message: "リクエストが不正です"
+
+    NotFound:
+      description: リソースが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "指定されたリソースが見つかりません"
+
+    InternalServerError:
+      description: サーバー内部エラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "サーバー内部でエラーが発生しました"
+
+tags:
+  - name: Pokemon
+    description: ポケモン管理関連のAPI
+  - name: Items
+    description: アイテム管理関連のAPI
+  - name: Battle
+    description: バトルシステム関連のAPI
+  - name: Player
+    description: プレイヤー管理関連のAPI
