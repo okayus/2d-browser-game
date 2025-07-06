@@ -11,3 +11,4 @@ export * from './モンスター.js';
 export * from './バトル.js';
 // API関連の型
 export * from './api.js';
+export * from './API応答.js';

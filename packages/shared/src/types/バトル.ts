@@ -60,5 +60,14 @@ export interface バトルアクション結果 {
   /** 結果メッセージ */
   メッセージ: string;
   /** 捕獲成功時の所持モンスター（捕獲成功時のみ） */
-  捕獲モンスター?: 所持モンスター;
+  捕獲モンスター?: {
+    id: string;
+    プレイヤーid: string;
+    種族id: string;
+    種族名: string;
+    ニックネーム: string | null;
+    現在hp: number;
+    最大hp: number;
+    捕獲日時: string;
+  };
 }
