@@ -17,10 +17,12 @@ import { プレイヤールーター } from '../api/プレイヤー';
 import モンスターAPI from '../api/モンスター';
 import { 初期データ投入, データリセット } from '../db/seed';
 import type { データベース型 } from '../db/型定義';
+import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
 
 // テスト用のHonoアプリケーション設定
 const app = new Hono();
 let testDb: Database.Database;
+let testD1Db: TestD1Database;
 let db: データベース型;
 
 /**
@@ -33,6 +35,11 @@ let db: データベース型;
 beforeAll(async () => {
   // インメモリデータベースを作成
   testDb = new Database(':memory:');
+  
+  // D1互換アダプターを作成
+  testD1Db = createTestD1Database(testDb);
+  
+  // Drizzle ORM インスタンス作成
   db = drizzle(testDb, { schema }) as unknown as データベース型;
 
   // テーブル作成（本来はマイグレーションで実行）
@@ -74,10 +81,13 @@ beforeAll(async () => {
   // 初期データを投入
   await 初期データ投入(db);
 
-  // モンスターAPIのミドルウェア設定（データベース注入）
+  // テスト用のミドルウェア設定（全体で統一したDrizzleインスタンスを使用）
   app.use('/api/*', async (c, next) => {
-    // @ts-expect-error テスト用の環境変数設定
-    c.env = { DB: testDb };
+    // @ts-expect-error テスト用のDrizzleインスタンス注入
+    c.env = { 
+      DB: testD1Db,  // D1互換性のために保持
+      DRIZZLE_DB: db // 統合テスト用のDrizzleインスタンス
+    };
     await next();
   });
 

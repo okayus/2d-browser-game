@@ -86,7 +86,8 @@ app.post(
   '/players/:playerId/monsters',
   zValidator('json', モンスター獲得スキーマ),
   async (c) => {
-    const db = drizzle(c.env.DB, { schema }) as データベース型;
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
+    const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { playerId } = c.req.param();
     const { 種族ID } = c.req.valid('json');
 
@@ -127,6 +128,14 @@ app.post(
         }, 404);
       }
 
+      // デバッグ用：種族データの詳細をログ出力
+      ロガー.デバッグ('種族データ取得成功', {
+        種族ID: 種族.id,
+        種族名: 種族.名前,
+        基本HP: 種族.基本hp,
+        種族データ全体: 種族,
+      });
+
       // 新しいモンスターを作成
       const 新規モンスター = {
         id: uuid生成(),
@@ -138,6 +147,13 @@ app.post(
         取得日時: new Date(),
         更新日時: new Date(),
       };
+
+      // デバッグ用：作成するモンスターデータをログ出力
+      ロガー.デバッグ('作成予定モンスターデータ', {
+        モンスターデータ: 新規モンスター,
+        現在HP値: 種族.基本hp,
+        最大HP値: 種族.基本hp,
+      });
 
       await db.insert(schema.所持モンスター).values(新規モンスター);
 
@@ -192,7 +208,8 @@ app.get(
   '/players/:playerId/monsters',
   zValidator('query', モンスター一覧クエリスキーマ),
   async (c) => {
-    const db = drizzle(c.env.DB, { schema }) as データベース型;
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
+    const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { playerId } = c.req.param();
     const { order, 種族ID } = c.req.valid('query');
 
@@ -269,7 +286,8 @@ app.put(
   '/monsters/:monsterId',
   zValidator('json', ニックネーム更新スキーマ),
   async (c) => {
-    const db = drizzle(c.env.DB, { schema }) as データベース型;
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
+    const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { monsterId } = c.req.param();
     const { ニックネーム } = c.req.valid('json');
 
@@ -335,7 +353,8 @@ app.put(
  * - 将来的には論理削除も検討
  */
 app.delete('/monsters/:monsterId', async (c) => {
-  const db = drizzle(c.env.DB, { schema }) as データベース型;
+  // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
+  const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
   const { monsterId } = c.req.param();
 
   try {
