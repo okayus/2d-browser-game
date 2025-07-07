@@ -89,10 +89,20 @@ describe('ID生成ユーティリティ単体テスト', () => {
      * 初学者向けメモ：
      * - グローバルオブジェクトのモック化
      * - 環境依存のエラーハンドリング確認
+     * - Node.js環境とブラウザ環境両方をモック
      */
     it('Crypto APIが利用できない場合はエラーを投げる', () => {
-      // Crypto APIをモック化
+      // 現在の環境を保存
       const 元のcrypto = globalThis.crypto;
+      const 元のprocess = globalThis.process;
+      
+      // Node.js環境ではないことをシミュレート
+      Object.defineProperty(globalThis, 'process', {
+        value: undefined,
+        configurable: true,
+      });
+      
+      // Crypto APIもなしでシミュレート
       Object.defineProperty(globalThis, 'crypto', {
         value: undefined,
         configurable: true,
@@ -105,6 +115,10 @@ describe('ID生成ユーティリティ単体テスト', () => {
       // 元の状態に復元
       Object.defineProperty(globalThis, 'crypto', {
         value: 元のcrypto,
+        configurable: true,
+      });
+      Object.defineProperty(globalThis, 'process', {
+        value: 元のprocess,
         configurable: true,
       });
     });
