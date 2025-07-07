@@ -13,7 +13,9 @@ import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { プレイヤー, モンスター種族, 所持モンスター } from '../db/スキーマ';
-import { nanoid } from 'nanoid'; // 一意IDの生成用
+// CI環境対応のため、nanoidではなくuuid生成()を使用
+// nanoid 5.0.0はNode.js環境でCrypto APIを要求するが、CI環境では利用できない場合がある
+// import { nanoid } from 'nanoid'; // 一意IDの生成用
 import type { データベース型 } from '../db/型定義';
 import { ロガー } from '../utils/ロガー';
 import { uuid生成 } from '@monster-game/shared';
@@ -57,8 +59,9 @@ export function プレイヤールーター(db: データベース型) {
     try {
       const { 名前 } = c.req.valid('json');
       
-      // 一意IDを生成
-      const プレイヤーid = nanoid();
+      // 一意IDを生成（CI環境対応）
+      // nanoidはCI環境でCrypto APIエラーを起こすため、環境対応済みのuuid生成()を使用
+      const プレイヤーid = uuid生成();
       const 現在時刻 = new Date();
       
       // データベースに新しいプレイヤーを登録
