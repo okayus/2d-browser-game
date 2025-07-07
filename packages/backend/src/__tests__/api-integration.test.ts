@@ -20,7 +20,7 @@ import type { データベース型 } from '../db/型定義';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
 
 // APIレスポンスの型定義
-interface APIレスポンス<T = any> {
+interface APIレスポンス<T = unknown> {
   成功: boolean;
   メッセージ?: string;
   データ?: T;
@@ -29,6 +29,56 @@ interface APIレスポンス<T = any> {
     コード: string;
     メッセージ: string;
   };
+}
+
+// プレイヤー作成レスポンスの型定義
+interface プレイヤー作成データ型 {
+  id: string;
+  名前: string;
+  作成日時: string;
+  初期モンスター: {
+    id: string;
+    種族名: string;
+    ニックネーム: string;
+    現在HP: number;
+    最大HP: number;
+  } | null;
+}
+
+// モンスター獲得レスポンスの型定義
+interface モンスター獲得データ型 {
+  id: string;
+  プレイヤーID: string;
+  種族: {
+    id: string;
+    名前: string;
+    基礎HP: number;
+  };
+  ニックネーム: string;
+  現在HP: number;
+  最大HP: number;
+  捕獲日時: string;
+}
+
+// モンスター一覧データの型定義
+interface モンスター一覧データ型 {
+  id: string;
+  ニックネーム: string;
+  現在hp: number;
+  最大hp: number;
+  取得日時: Date;
+  種族: {
+    id: string;
+    名前: string;
+    基本hp: number;
+  };
+}
+
+// プレイヤー取得データの型定義
+interface プレイヤー取得データ型 {
+  id: string;
+  名前: string;
+  作成日時: string;
 }
 
 // テスト用のHonoアプリケーション設定
@@ -96,7 +146,7 @@ beforeAll(async () => {
   // テスト用のミドルウェア設定（全体で統一したDrizzleインスタンスを使用）
   app.use('/api/*', async (c, next) => {
     c.env = { 
-      DB: testD1Db as any,  // D1互換性のために保持
+      DB: testD1Db as unknown as D1Database,  // D1互換性のために保持
       DRIZZLE_DB: db // 統合テスト用のDrizzleインスタンス
     };
     await next();
@@ -140,25 +190,25 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
 
     // レスポンス検証
     expect(response.status).toBe(201);
-    const responseData = await response.json() as APIレスポンス<any>;
+    const responseData = await response.json() as APIレスポンス<プレイヤー作成データ型>;
     
     expect(responseData.成功).toBe(true);
     expect(responseData.メッセージ).toBe('プレイヤーが作成されました');
-    expect(responseData.データ.名前).toBe('テストプレイヤー');
-    expect(responseData.データ.初期モンスター).toBeDefined();
+    expect(responseData.データ?.名前).toBe('テストプレイヤー');
+    expect(responseData.データ?.初期モンスター).toBeDefined();
     
     // 初期モンスターの検証
-    const 初期モンスター = responseData.データ.初期モンスター;
+    const 初期モンスター = responseData.データ?.初期モンスター;
     expect(初期モンスター).not.toBeNull();
-    expect(['でんきネズミ', 'ほのおトカゲ', 'くさモグラ']).toContain(初期モンスター.種族名);
-    expect(初期モンスター.現在HP).toBeGreaterThan(0);
-    expect(初期モンスター.最大HP).toBeGreaterThan(0);
+    expect(['でんきネズミ', 'ほのおトカゲ', 'くさモグラ']).toContain(初期モンスター?.種族名);
+    expect(初期モンスター?.現在HP).toBeGreaterThan(0);
+    expect(初期モンスター?.最大HP).toBeGreaterThan(0);
 
     // データベース確認
     const 保存されたプレイヤー = await db
       .select()
       .from(schema.プレイヤー)
-      .where(eq(schema.プレイヤー.id, responseData.データ.id));
+      .where(eq(schema.プレイヤー.id, responseData.データ?.id ?? ''));
     
     expect(保存されたプレイヤー).toHaveLength(1);
     expect(保存されたプレイヤー[0]?.名前).toBe('テストプレイヤー');
@@ -167,10 +217,10 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const 所持モンスター = await db
       .select()
       .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.プレイヤーid, responseData.データ.id));
+      .where(eq(schema.所持モンスター.プレイヤーid, responseData.データ?.id ?? ''));
     
     expect(所持モンスター).toHaveLength(1);
-    expect(所持モンスター[0]?.id).toBe(初期モンスター.id);
+    expect(所持モンスター[0]?.id).toBe(初期モンスター?.id);
   });
 
   /**
@@ -189,8 +239,8 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'モンスタートレーナー' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
-    const プレイヤーId = プレイヤーData.データ.id;
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const プレイヤーId = プレイヤーData.データ!.id;
 
     // 2. 種族情報取得（みずガメを獲得）
     const 種族一覧 = await db.select().from(schema.モンスター種族);
@@ -206,13 +256,13 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
 
     // レスポンス検証
     expect(獲得Response.status).toBe(201);
-    const 獲得Data = await 獲得Response.json() as APIレスポンス<any>;
+    const 獲得Data = await 獲得Response.json() as APIレスポンス<モンスター獲得データ型>;
     
     expect(獲得Data.成功).toBe(true);
-    expect(獲得Data.データ.種族.名前).toBe('みずガメ');
-    expect(獲得Data.データ.ニックネーム).toBe('みずガメ'); // デフォルトは種族名
-    expect(獲得Data.データ.現在HP).toBe(45); // みずガメの基本HP
-    expect(獲得Data.データ.最大HP).toBe(45);
+    expect(獲得Data.データ!.種族.名前).toBe('みずガメ');
+    expect(獲得Data.データ!.ニックネーム).toBe('みずガメ'); // デフォルトは種族名
+    expect(獲得Data.データ!.現在HP).toBe(45); // みずガメの基本HP
+    expect(獲得Data.データ!.最大HP).toBe(45);
 
     // データベース確認
     const 所持モンスター = await db
@@ -240,8 +290,8 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'コレクター' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
-    const プレイヤーId = プレイヤーData.データ.id;
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const プレイヤーId = プレイヤーData.データ!.id;
 
     // 2. 追加でモンスターを獲得
     const 種族一覧 = await db.select().from(schema.モンスター種族);
@@ -257,14 +307,14 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const 一覧Response = await app.request(`/api/players/${プレイヤーId}/monsters`);
     
     expect(一覧Response.status).toBe(200);
-    const 一覧Data = await 一覧Response.json() as APIレスポンス<any>;
+    const 一覧Data = await 一覧Response.json() as APIレスポンス<モンスター一覧データ型[]>;
     
     expect(一覧Data.成功).toBe(true);
     expect(一覧Data.件数).toBe(2); // 初期 + 追加獲得
     expect(一覧Data.データ).toHaveLength(2);
     
     // 各モンスターの情報確認
-    一覧Data.データ.forEach((monster: any) => {
+    一覧Data.データ!.forEach((monster: モンスター一覧データ型) => {
       expect(monster.id).toBeDefined();
       expect(monster.ニックネーム).toBeDefined();
       expect(monster.種族.名前).toBeDefined();
@@ -289,27 +339,27 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'ニックネーマー' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
-    const 初期モンスター = プレイヤーData.データ.初期モンスター;
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
 
     // 2. ニックネーム変更
-    const 変更Response = await app.request(`/api/monsters/${初期モンスター.id}`, {
+    const 変更Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ニックネーム: 'ピカチュウ' }),
     });
 
     expect(変更Response.status).toBe(200);
-    const 変更Data = await 変更Response.json() as APIレスポンス<any>;
+    const 変更Data = await 変更Response.json() as APIレスポンス<{ ニックネーム: string }>;
     
     expect(変更Data.成功).toBe(true);
-    expect(変更Data.データ.ニックネーム).toBe('ピカチュウ');
+    expect(変更Data.データ!.ニックネーム).toBe('ピカチュウ');
 
     // データベース確認
     const 更新されたモンスター = await db
       .select()
       .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.id, 初期モンスター.id));
+      .where(eq(schema.所持モンスター.id, 初期モンスター!.id));
     
     expect(更新されたモンスター[0]?.ニックネーム).toBe('ピカチュウ');
   });
@@ -330,11 +380,11 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'バリデーションテスター' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
-    const 初期モンスター = プレイヤーData.データ.初期モンスター;
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
 
     // 2. 空文字でニックネーム変更試行
-    const 空文字Response = await app.request(`/api/monsters/${初期モンスター.id}`, {
+    const 空文字Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ニックネーム: '' }),
@@ -343,7 +393,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(空文字Response.status).toBe(400);
 
     // 3. 長すぎるニックネーム変更試行
-    const 長文字Response = await app.request(`/api/monsters/${初期モンスター.id}`, {
+    const 長文字Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ニックネーム: 'a'.repeat(21) }), // 21文字
@@ -368,9 +418,9 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: 'リリーサー' }),
     });
     
-    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<any>;
-    const プレイヤーId = プレイヤーData.データ.id;
-    const 初期モンスター = プレイヤーData.データ.初期モンスター;
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const プレイヤーId = プレイヤーData.データ!.id;
+    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
 
     // 解放前の確認
     const 解放前 = await db
@@ -380,12 +430,12 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(解放前).toHaveLength(1);
 
     // 2. モンスター解放
-    const 解放Response = await app.request(`/api/monsters/${初期モンスター.id}`, {
+    const 解放Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'DELETE',
     });
 
     expect(解放Response.status).toBe(200);
-    const 解放Data = await 解放Response.json() as APIレスポンス<any>;
+    const 解放Data = await 解放Response.json() as APIレスポンス<unknown>;
     
     expect(解放Data.成功).toBe(true);
     expect(解放Data.メッセージ).toBe('モンスターを解放しました');
@@ -416,7 +466,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     });
 
     expect(変更Response.status).toBe(404);
-    const 変更Data = await 変更Response.json() as APIレスポンス<any>;
+    const 変更Data = await 変更Response.json() as APIレスポンス<{ ニックネーム: string }>;
     expect(変更Data.成功).toBe(false);
 
     // 解放試行
@@ -425,7 +475,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     });
 
     expect(解放Response.status).toBe(404);
-    const 解放Data = await 解放Response.json() as APIレスポンス<any>;
+    const 解放Data = await 解放Response.json() as APIレスポンス<unknown>;
     expect(解放Data.成功).toBe(false);
   });
 
@@ -444,19 +494,19 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       body: JSON.stringify({ 名前: '取得テストプレイヤー' }),
     });
     
-    const 作成Data = await 作成Response.json() as APIレスポンス<any>;
-    const プレイヤーId = 作成Data.データ.id;
+    const 作成Data = await 作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const プレイヤーId = 作成Data.データ!.id;
 
     // 2. プレイヤー取得
     const 取得Response = await app.request(`/api/players/${プレイヤーId}`);
     
     expect(取得Response.status).toBe(200);
-    const 取得Data = await 取得Response.json() as APIレスポンス<any>;
+    const 取得Data = await 取得Response.json() as APIレスポンス<プレイヤー取得データ型>;
     
     expect(取得Data.成功).toBe(true);
-    expect(取得Data.データ.id).toBe(プレイヤーId);
-    expect(取得Data.データ.名前).toBe('取得テストプレイヤー');
-    expect(取得Data.データ.作成日時).toBeDefined();
+    expect(取得Data.データ!.id).toBe(プレイヤーId);
+    expect(取得Data.データ!.名前).toBe('取得テストプレイヤー');
+    expect(取得Data.データ!.作成日時).toBeDefined();
   });
 });
 

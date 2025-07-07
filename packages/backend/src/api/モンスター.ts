@@ -86,8 +86,8 @@ app.post(
   '/players/:playerId/monsters',
   zValidator('json', モンスター獲得スキーマ),
   async (c) => {
-    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
-    const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
+    const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { playerId } = c.req.param();
     const { 種族ID } = c.req.valid('json');
 
@@ -208,8 +208,8 @@ app.get(
   '/players/:playerId/monsters',
   zValidator('query', モンスター一覧クエリスキーマ),
   async (c) => {
-    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
-    const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
+    const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { playerId } = c.req.param();
     const { order, 種族ID } = c.req.valid('query');
 
@@ -286,8 +286,8 @@ app.put(
   '/monsters/:monsterId',
   zValidator('json', ニックネーム更新スキーマ),
   async (c) => {
-    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
-    const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
+    const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { monsterId } = c.req.param();
     const { ニックネーム } = c.req.valid('json');
 
@@ -354,7 +354,7 @@ app.put(
  */
 app.delete('/monsters/:monsterId', async (c) => {
   // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
-  const db = (c.env as any).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
+  const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
   const { monsterId } = c.req.param();
 
   try {
