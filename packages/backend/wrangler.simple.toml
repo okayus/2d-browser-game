@@ -1,0 +1,23 @@
+# シンプルな統合テスト用設定
+# 初学者向けメモ：最小限の設定でD1接続テストを実行
+
+name = "monster-game-simple-test"
+main = "src/index.simple.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1データベース設定
+[[d1_databases]]
+binding = "DB"
+database_name = "monster-game-dev"
+database_id = "deb0b7fc-c860-49df-978c-dda97da702b2"
+preview_database_id = "local-monster-game"
+
+# 開発サーバー設定
+[dev]
+port = 8788  # 通常の開発サーバーと別ポートを使用
+local_protocol = "http"
+
+# 初学者向けメモ：
+# この設定ファイルは統合テスト専用です
+# 通常の開発では wrangler.jsonc を使用してください
