@@ -1,0 +1,62 @@
+{
+  // Cloudflare Workers 設定ファイル (wrangler.jsonc)
+  // 初学者向けメモ：jsonc形式でコメントが書けるため、より分かりやすい設定が可能
+  
+  "name": "monster-game-backend",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-01-01",
+  
+  // D1データベース設定
+  // 初学者向けメモ：D1はCloudflareのSQLiteベースのデータベース
+  "d1_databases": [
+    {
+      "binding": "DB", // Workers内でenv.DBとしてアクセス可能
+      "database_name": "monster-game-dev",
+      "database_id": "deb0b7fc-c860-49df-978c-dda97da702b2", // wrangler d1 createで生成されたID
+      "preview_database_id": "local-monster-game" // ローカル開発用の識別子
+    }
+  ],
+  
+  // 環境別設定
+  "env": {
+    // 開発環境設定
+    "development": {
+      "name": "monster-game-backend-dev",
+      "vars": {
+        "ENVIRONMENT": "development",
+        "LOG_LEVEL": "debug"
+      }
+    },
+    
+    // 本番環境設定
+    "production": {
+      "name": "monster-game-backend-production",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "monster-game-prod",
+          "database_id": "YOUR_PROD_DATABASE_ID_HERE" // 本番用は別途作成
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "LOG_LEVEL": "error"
+      }
+    }
+  },
+  
+  // Node.js互換性設定
+  // 初学者向けメモ：wrangler v4からはcompatibility_flagsを使用
+  "compatibility_flags": ["nodejs_compat"],
+  
+  // ビルド設定
+  "build": {
+    "command": "npm run build"
+  },
+  
+  // 開発サーバー設定
+  "dev": {
+    "port": 8787,
+    "local_protocol": "http"
+  }
+}

@@ -14,10 +14,9 @@ export default {
   out: './migrations', // マイグレーションファイルの出力先
   driver: 'd1', // Cloudflare D1データベースを使用
   dbCredentials: {
-    // 初学者向けメモ：本番環境では環境変数から取得
-    // 開発環境では後で設定
-    wranglerConfigPath: './wrangler.toml',
-    dbName: 'monster-game-db',
+    // 初学者向けメモ：wrangler.jsoncから設定を読み込む
+    wranglerConfigPath: './wrangler.jsonc',
+    dbName: 'monster-game-dev',
   },
 } satisfies Config;
 
