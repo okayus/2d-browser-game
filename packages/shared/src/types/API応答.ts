@@ -64,6 +64,40 @@ export interface プレイヤー一覧応答 extends API応答<プレイヤー[]
 }
 
 /**
+ * プレイヤー作成API応答（フロントエンド用）
+ * 
+ * 初学者向けメモ：
+ * - プレイヤー作成時の専用応答型
+ * - 初期モンスターIDも含む
+ */
+export interface プレイヤー作成API応答 extends API応答<{
+  id: string;
+  name: string;
+  initialMonsterId?: string;
+}> {}
+
+/**
+ * プレイヤー一覧レスポンス（フロントエンド用）
+ */
+export interface プレイヤー一覧API応答 extends API応答<プレイヤー[]> {}
+
+/**
+ * モンスター一覧レスポンス（フロントエンド用）
+ */
+export interface モンスター一覧API応答 extends API応答<{
+  player: プレイヤー;
+  monsters: Array<{
+    id: string;
+    ニックネーム: string;
+    現在hp: number;
+    最大hp: number;
+    取得日時: string;
+    種族名: string;
+    種族説明?: string;
+  }>;
+}> {}
+
+/**
  * エラー専用応答
  * 
  * 初学者向けメモ：
@@ -88,6 +122,21 @@ export interface 成功応答<T> extends API応答<T> {
   readonly 成功: true;
   readonly データ: T;
   readonly エラー?: never;
+}
+
+/**
+ * APIエラーレスポンス（フロントエンド用）
+ * 
+ * 初学者向けメモ：
+ * - フロントエンドのAPIクライアントが期待する形式
+ * - バックエンドの実装と一致させる
+ */
+export interface APIエラー応答 {
+  readonly 成功: false;
+  readonly エラー: {
+    readonly コード: string;
+    readonly メッセージ: string;
+  };
 }
 
 /**

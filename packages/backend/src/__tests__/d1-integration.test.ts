@@ -7,43 +7,75 @@
  * - エンドツーエンドのテストで実際のAPIの動作を確認
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { unstable_dev } from 'wrangler';
-import type { UnstableDevWorker } from 'wrangler';
+import type { Unstable_DevWorker } from 'wrangler';
 
 describe('D1統合テスト', () => {
-  let worker: UnstableDevWorker;
+  let worker: Unstable_DevWorker;
 
   // テスト開始前にWorkerを起動
   beforeAll(async () => {
-    worker = await unstable_dev('src/index.simple.ts', {
-      experimental: { disableExperimentalWarning: true },
-      config: 'wrangler.simple.toml',
-      local: true,
-      vars: {},
-    });
-  });
+    try {
+      worker = await unstable_dev('src/index.simple.ts', {
+        experimental: { disableExperimentalWarning: true },
+        config: 'wrangler.simple.toml',
+        local: true,
+        vars: {},
+      });
+    } catch (error) {
+      console.error('Worker startup failed:', error);
+      throw error;
+    }
+  }, 30000); // タイムアウトを30秒に設定
 
   // テスト終了後にWorkerを停止
   afterAll(async () => {
-    await worker.stop();
+    if (worker) {
+      try {
+        await worker.stop();
+      } catch (error) {
+        console.warn('Worker stop failed:', error);
+      }
+    }
+  }, 10000); // タイムアウトを10秒に設定
+
+  // 各テスト後にクリーンアップ
+  afterEach(async () => {
+    // メモリ使用量を確認し、必要に応じてガベージコレクションを実行
+    if (global.gc) {
+      global.gc();
+    }
   });
 
   describe('ヘルスチェック', () => {
     it('正常にヘルスチェックができること', async () => {
+      expect(worker).toBeDefined();
+      
       const resp = await worker.fetch('/health');
-      const json = await resp.json() as any;
+      expect(resp).toBeDefined();
+      
+      const json = await resp.json() as { status: string; database: string; timestamp: string };
 
       expect(resp.status).toBe(200);
       expect(json.status).toBe('healthy');
       expect(json.database).toBe('connected');
+      expect(json.timestamp).toBeDefined();
     });
   });
 
   describe('モンスター種族API', () => {
     it('モンスター種族一覧が取得できること', async () => {
+      expect(worker).toBeDefined();
+      
       const resp = await worker.fetch('/monster-species');
-      const json = await resp.json() as any;
+      expect(resp).toBeDefined();
+      
+      const json = await resp.json() as { 
+        success: boolean; 
+        data: Array<{ id: string; 名前: string; 基本hp: number }>; 
+        count: number 
+      };
 
       expect(resp.status).toBe(200);
       expect(json.success).toBe(true);
@@ -51,7 +83,7 @@ describe('D1統合テスト', () => {
       expect(json.count).toBeGreaterThan(0);
 
       // 初期データが含まれていることを確認
-      const speciesNames = json.data.map((s: any) => s.名前);
+      const speciesNames = json.data.map((s) => s.名前);
       expect(speciesNames).toContain('でんきネズミ');
       expect(speciesNames).toContain('ほのおトカゲ');
       expect(speciesNames).toContain('みずガメ');
@@ -62,12 +94,19 @@ describe('D1統合テスト', () => {
     let createdPlayerId: string;
 
     it('新しいプレイヤーを作成できること', async () => {
+      expect(worker).toBeDefined();
+      
       const resp = await worker.fetch('/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'テストプレイヤー' }),
       });
-      const json = await resp.json() as any;
+      expect(resp).toBeDefined();
+      
+      const json = await resp.json() as { 
+        success: boolean; 
+        data: { id: string; name: string; initialMonsterId: string } 
+      };
 
       expect(resp.status).toBe(200);
       expect(json.success).toBe(true);
@@ -85,7 +124,7 @@ describe('D1統合テスト', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: '' }),
       });
-      const json = await resp.json() as any;
+      const json = await resp.json() as { success: boolean; error: string };
 
       expect(resp.status).toBe(400);
       expect(json.success).toBe(false);
@@ -98,7 +137,7 @@ describe('D1統合テスト', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'あ'.repeat(21) }),
       });
-      const json = await resp.json() as any;
+      const json = await resp.json() as { success: boolean; error: string };
 
       expect(resp.status).toBe(400);
       expect(json.success).toBe(false);
@@ -107,7 +146,18 @@ describe('D1統合テスト', () => {
 
     it('作成したプレイヤーの所持モンスターが取得できること', async () => {
       const resp = await worker.fetch(`/players/${createdPlayerId}/monsters`);
-      const json = await resp.json() as any;
+      const json = await resp.json() as {
+        success: boolean;
+        data: {
+          player: { 名前: string };
+          monsters: Array<{
+            種族名: string;
+            ニックネーム: string;
+            現在hp: number;
+            最大hp: number;
+          }>;
+        };
+      };
 
       expect(resp.status).toBe(200);
       expect(json.success).toBe(true);
@@ -118,15 +168,16 @@ describe('D1統合テスト', () => {
 
       // 初期モンスターの確認
       const initialMonster = json.data.monsters[0];
-      expect(initialMonster.種族名).toBe('でんきネズミ');
-      expect(initialMonster.ニックネーム).toBe('でんきネズミ');
-      expect(initialMonster.現在hp).toBe(35);
-      expect(initialMonster.最大hp).toBe(35);
+      expect(initialMonster).toBeDefined();
+      expect(initialMonster?.種族名).toBe('でんきネズミ');
+      expect(initialMonster?.ニックネーム).toBe('でんきネズミ');
+      expect(initialMonster?.現在hp).toBe(35);
+      expect(initialMonster?.最大hp).toBe(35);
     });
 
     it('存在しないプレイヤーの場合404エラーになること', async () => {
       const resp = await worker.fetch('/players/non_existent_player/monsters');
-      const json = await resp.json() as any;
+      const json = await resp.json() as { success: boolean; error: string };
 
       expect(resp.status).toBe(404);
       expect(json.success).toBe(false);

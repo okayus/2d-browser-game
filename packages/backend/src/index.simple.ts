@@ -35,7 +35,7 @@ app.get('/health', async (c) => {
   try {
     // データベース接続テスト
     const db = drizzle(c.env.DB, { schema });
-    const result = await db.select({ count: schema.モンスター種族.id })
+    await db.select({ count: schema.モンスター種族.id })
       .from(schema.モンスター種族)
       .limit(1);
     
@@ -111,14 +111,15 @@ app.post('/players', async (c) => {
       .where(eq(schema.モンスター種族.id, 'electric_mouse'))
       .limit(1);
     
-    if (electricMouse.length > 0) {
+    if (electricMouse.length > 0 && electricMouse[0]) {
+      const species = electricMouse[0];
       await db.insert(schema.所持モンスター).values({
         id: initialMonsterId,
         プレイヤーid: playerId,
         種族id: 'electric_mouse',
-        ニックネーム: electricMouse[0].名前,
-        現在hp: electricMouse[0].基本hp,
-        最大hp: electricMouse[0].基本hp,
+        ニックネーム: species.名前,
+        現在hp: species.基本hp,
+        最大hp: species.基本hp,
         取得日時: now,
         更新日時: now,
       });

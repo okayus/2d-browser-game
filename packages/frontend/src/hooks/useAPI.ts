@@ -8,14 +8,14 @@
  */
 
 import { useState, useCallback } from 'react';
-import { APIError } from '@/api';
+import { APIError } from '../api/client';
 
 // APIフック の戻り値の型
-interface UseAPIResult<T> {
+interface UseAPIResult<T, Args extends unknown[]> {
   data: T | null;
   loading: boolean;
   error: APIError | null;
-  execute: (...args: any[]) => Promise<T | null>;
+  execute: (...args: Args) => Promise<T | null>;
   reset: () => void;
 }
 
@@ -37,9 +37,9 @@ interface UseAPIResult<T> {
  * };
  * ```
  */
-export function useAPI<T, Args extends any[]>(
+export function useAPI<T, Args extends unknown[]>(
   apiFunction: (...args: Args) => Promise<T>
-): UseAPIResult<T> {
+): UseAPIResult<T, Args> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<APIError | null>(null);
@@ -98,7 +98,7 @@ import { useEffect } from 'react';
 export function useAPIEffect<T>(
   apiFunction: () => Promise<T>,
   deps: React.DependencyList = []
-): UseAPIResult<T> {
+): UseAPIResult<T, []> {
   const api = useAPI(apiFunction);
 
   useEffect(() => {
