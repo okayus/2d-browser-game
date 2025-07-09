@@ -8,9 +8,12 @@
  * - 成功時はプレイヤー詳細ページにリダイレクト
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { User, ArrowLeft, Loader2 } from 'lucide-react';
+import { ゲームボタン } from '../components/ゲームボタン';
+import { ゲームカード } from '../components/ゲームカード';
+import { useプレイヤー名 } from '../hooks/useプレイヤー名';
 
 /**
  * プレイヤー作成ページコンポーネント
@@ -23,6 +26,8 @@ import { User, ArrowLeft, Loader2 } from 'lucide-react';
  */
 export function プレイヤー作成() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { プレイヤー名: カスタムフックプレイヤー名, setプレイヤー名 } = useプレイヤー名();
   
   // フォームの状態管理
   const [フォームデータ, setフォームデータ] = useState({
@@ -31,6 +36,19 @@ export function プレイヤー作成() {
   
   const [エラー, setエラー] = useState<string | null>(null);
   const [送信中, set送信中] = useState(false);
+
+  // 初期化時にプレイヤー名を設定
+  useEffect(() => {
+    // ホーム画面から渡されたプレイヤー名を取得
+    const 渡されたプレイヤー名 = location.state?.プレイヤー名;
+    
+    if (渡されたプレイヤー名) {
+      setフォームデータ(prev => ({ ...prev, 名前: 渡されたプレイヤー名 }));
+    } else if (カスタムフックプレイヤー名) {
+      // ローカルストレージから復元されたプレイヤー名を使用
+      setフォームデータ(prev => ({ ...prev, 名前: カスタムフックプレイヤー名 }));
+    }
+  }, [location.state?.プレイヤー名, カスタムフックプレイヤー名]);
 
   /**
    * フォーム入力時のハンドラー
@@ -111,92 +129,136 @@ export function プレイヤー作成() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* ページヘッダー */}
       <div className="flex items-center space-x-4">
-        <button
+        <ゲームボタン
+          variant="ghost"
           onClick={() => navigate(-1)}
-          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex items-center space-x-2"
         >
           <ArrowLeft className="h-5 w-5" />
           <span>戻る</span>
-        </button>
+        </ゲームボタン>
         <div className="h-6 w-px bg-gray-300" />
         <h1 className="text-2xl font-bold text-gray-900">新しいプレイヤーを作成</h1>
       </div>
 
       {/* フォーム */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <form onSubmit={フォーム送信ハンドラー} className="space-y-6">
-          {/* プレイヤー名入力 */}
-          <div>
-            <label htmlFor="名前" className="block text-sm font-medium text-gray-700 mb-2">
-              プレイヤー名
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                id="名前"
-                name="名前"
-                value={フォームデータ.名前}
-                onChange={入力変更ハンドラー}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="プレイヤー名を入力してください"
-                maxLength={20}
-                disabled={送信中}
-              />
+      <ゲームカード variant="elevated" padding="lg">
+        <ゲームカード.Header>
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-100 p-3 rounded-full">
+              <User className="h-6 w-6 text-blue-600" />
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              20文字以内で入力してください（現在: {フォームデータ.名前.length}/20文字）
-            </p>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">プレイヤー情報</h2>
+              <p className="text-sm text-gray-600">ゲームで使用するプレイヤー名を設定してください</p>
+            </div>
           </div>
+        </ゲームカード.Header>
 
-          {/* エラーメッセージ */}
-          {エラー && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <p className="text-sm text-red-800">{エラー}</p>
+        <ゲームカード.Content>
+          <form onSubmit={フォーム送信ハンドラー} className="space-y-6">
+            {/* プレイヤー名入力 */}
+            <div>
+              <label htmlFor="名前" className="block text-sm font-medium text-gray-700 mb-2">
+                プレイヤー名 <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
+                <input
+                  type="text"
+                  id="名前"
+                  name="名前"
+                  value={フォームデータ.名前}
+                  onChange={入力変更ハンドラー}
+                  className={`
+                    block w-full pl-10 pr-3 py-3 border rounded-lg text-sm transition-colors
+                    focus:outline-none focus:ring-2 focus:ring-offset-2
+                    ${エラー 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                    }
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                  placeholder="プレイヤー名を入力してください"
+                  maxLength={20}
+                  disabled={送信中}
+                  autoFocus
+                />
+              </div>
+              
+              {/* 文字数カウンターとステータス */}
+              <div className="flex justify-between items-center mt-2">
+                <div>
+                  {エラー && (
+                    <p className="text-sm text-red-500">{エラー}</p>
+                  )}
+                  {!エラー && フォームデータ.名前.length > 0 && (
+                    <p className="text-sm text-green-600">✓ 有効なプレイヤー名です</p>
+                  )}
+                </div>
+                <span className={`text-sm ${
+                  フォームデータ.名前.length > 15 ? 'text-orange-500' : 'text-gray-500'
+                }`}>
+                  {フォームデータ.名前.length}/20
+                </span>
               </div>
             </div>
-          )}
 
-          {/* 送信ボタン */}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={送信中 || !フォームデータ.名前.trim()}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {送信中 ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>作成中...</span>
-                </>
-              ) : (
-                <>
-                  <User className="h-4 w-4" />
-                  <span>プレイヤーを作成</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+            {/* 送信ボタン */}
+            <div className="flex justify-end space-x-3">
+              <ゲームボタン
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setフォームデータ({ 名前: '' });
+                  setエラー(null);
+                }}
+                disabled={送信中 || !フォームデータ.名前}
+              >
+                クリア
+              </ゲームボタン>
+              
+              <ゲームボタン
+                type="submit"
+                variant="primary"
+                disabled={送信中 || !フォームデータ.名前.trim()}
+                className="min-w-[120px]"
+              >
+                {送信中 ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    作成中...
+                  </>
+                ) : (
+                  <>
+                    <User className="h-4 w-4 mr-2" />
+                    プレイヤーを作成
+                  </>
+                )}
+              </ゲームボタン>
+            </div>
+          </form>
+        </ゲームカード.Content>
+      </ゲームカード>
 
       {/* 説明セクション */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          プレイヤー作成について
-        </h2>
-        <div className="space-y-2 text-sm text-gray-600">
-          <p>• プレイヤー名は一意である必要はありません</p>
-          <p>• 作成後にプレイヤー名を変更することはできません</p>
-          <p>• 各プレイヤーは独自のIDを持ち、モンスターを管理できます</p>
-          <p>• 今後の開発で、プレイヤーレベルや経験値などの機能を追加予定です</p>
-        </div>
-      </div>
+      <ゲームカード variant="outlined" padding="lg" className="bg-gray-50">
+        <ゲームカード.Header>
+          <h2 className="text-lg font-semibold text-gray-900">
+            プレイヤー作成について
+          </h2>
+        </ゲームカード.Header>
+        <ゲームカード.Content>
+          <div className="space-y-2 text-sm text-gray-600">
+            <p>• プレイヤー名は一意である必要はありません</p>
+            <p>• 作成後にプレイヤー名を変更することはできません</p>
+            <p>• 各プレイヤーは独自のIDを持ち、モンスターを管理できます</p>
+            <p>• 今後の開発で、プレイヤーレベルや経験値などの機能を追加予定です</p>
+          </div>
+        </ゲームカード.Content>
+      </ゲームカード>
     </div>
   );
 }
