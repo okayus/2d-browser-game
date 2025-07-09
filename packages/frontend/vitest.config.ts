@@ -13,10 +13,16 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    transformMode: {
+      web: [/\.[jt]sx?$/],
+    },
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  esbuild: {
+    target: 'node14',
   },
 });

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モンスター収集ゲーム - プレイヤー作成</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- カスタムCSS -->
+    <link rel="stylesheet" href="css/custom.css">
+    
+    <!-- メタ情報 -->
+    <meta name="description" content="プログラミング学習用モンスター収集ゲーム - プレイヤー作成">
+    
+    <!-- ファビコン -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+</head>
+<body class="bg-gradient-game min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-white/90 backdrop-blur-sm shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🎮</span>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">モンスター収集ゲーム</h1>
+                        <p class="text-sm text-gray-600">プレイヤー作成</p>
+                    </div>
+                </div>
+                <button 
+                    id="back-to-start-btn"
+                    class="btn-hover-scale bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300"
+                >
+                    ← スタートに戻る
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div id="main-content" class="space-y-8">
+            
+            <!-- プレイヤー情報表示エリア -->
+            <div id="player-info" class="fade-in">
+                <!-- プレイヤー情報がここに動的に表示される -->
+            </div>
+
+            <!-- モンスター選択エリア -->
+            <div id="monster-selection" class="fade-in-delay-1">
+                <!-- モンスター選択UIがここに動的に表示される -->
+            </div>
+
+            <!-- プレビューエリア -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 fade-in-delay-2">
+                
+                <!-- 選択したモンスターのプレビュー -->
+                <div id="monster-preview" class="order-2 lg:order-1">
+                    <!-- モンスタープレビューがここに表示される -->
+                    <div class="bg-white/50 rounded-lg p-8 text-center border-2 border-dashed border-gray-300">
+                        <div class="text-6xl mb-4">❓</div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">パートナーを選択してください</h3>
+                        <p class="text-gray-500">上からモンスターを選ぶとここにプレビューが表示されます</p>
+                    </div>
+                </div>
+
+                <!-- 冒険開始エリア -->
+                <div class="order-1 lg:order-2">
+                    <div class="bg-white rounded-lg shadow-game p-8">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">冒険の準備</h3>
+                        
+                        <!-- 準備状況チェックリスト -->
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-sm">✓</span>
+                                </div>
+                                <span class="text-gray-700">プレイヤー作成完了</span>
+                            </div>
+                            <div id="monster-selection-check" class="flex items-center space-x-3">
+                                <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
+                                    <span class="text-gray-600 text-sm">?</span>
+                                </div>
+                                <span class="text-gray-500">パートナーモンスター選択</span>
+                            </div>
+                        </div>
+
+                        <!-- 冒険開始ボタン -->
+                        <button 
+                            id="start-adventure-btn"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            <span class="inline-flex items-center space-x-2">
+                                <span>🗺️</span>
+                                <span>冒険を開始する</span>
+                            </span>
+                        </button>
+
+                        <!-- 注意事項 -->
+                        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                            <h4 class="font-semibold text-blue-900 mb-2 text-sm">💡 ヒント</h4>
+                            <ul class="text-sm text-blue-800 space-y-1">
+                                <li>• モンスターは後からでも仲間にできます</li>
+                                <li>• 最初のパートナーは特別な絆を持ちます</li>
+                                <li>• 各モンスターに異なる特徴があります</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学習ポイント -->
+            <div class="bg-white/80 rounded-lg p-6 fade-in-delay-2">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">🎓 学習ポイント</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-2">フロントエンド技術</h4>
+                        <ul class="text-sm text-gray-700 space-y-1">
+                            <li>• <strong>DOM操作</strong>: 動的コンテンツ生成</li>
+                            <li>• <strong>イベント処理</strong>: クリック・キーボード対応</li>
+                            <li>• <strong>状態管理</strong>: LocalStorageでのデータ永続化</li>
+                            <li>• <strong>UI/UX</strong>: レスポンシブデザイン・アニメーション</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-2">プログラミング概念</h4>
+                        <ul class="text-sm text-gray-700 space-y-1">
+                            <li>• <strong>データ構造</strong>: オブジェクト配列の操作</li>
+                            <li>• <strong>関数設計</strong>: モジュラーな機能分割</li>
+                            <li>• <strong>エラーハンドリング</strong>: 適切な例外処理</li>
+                            <li>• <strong>アクセシビリティ</strong>: キーボード・スクリーンリーダー対応</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white/80 backdrop-blur-sm border-t border-gray-200 mt-12">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="text-center text-gray-600 text-sm">
+                <p>学習用プロジェクト | HTML + CSS + JavaScript プロトタイプ</p>
+                <p class="mt-1">Next: React + TypeScript 本格実装</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/common.js"></script>
+    <script src="js/player.js"></script>
+    <script>
+        /**
+         * プレイヤー作成画面の処理
+         * 
+         * 初学者向けメモ：
+         * - player.jsの機能を活用
+         * - モンスター選択のリアルタイム反映
+         * - アクセシビリティ対応
+         */
+
+        // 初期化処理
+        onDOMReady(() => {
+            // プレイヤー作成画面を初期化
+            window.playerModule.initializePlayerCreationPage();
+            
+            // カスタムイベントリスナーを設定
+            setupCustomEventListeners();
+            
+            debugLog('Player Creation Page Ready', getGameState());
+        });
+
+        /**
+         * カスタムイベントリスナーの設定
+         */
+        function setupCustomEventListeners() {
+            // モンスター選択状態の変更を監視
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('.selectable-card')) {
+                    updateSelectionCheck();
+                }
+            });
+            
+            // キーボードナビゲーション
+            setupKeyboardEvents({
+                'escape': () => {
+                    // Escapeキーでスタート画面に戻る
+                    if (confirm('スタート画面に戻りますか？変更は保存されません。')) {
+                        navigateToPage('index');
+                    }
+                },
+                'enter': (event) => {
+                    // Enterキーで冒険開始（ボタンにフォーカスがある場合）
+                    const startButton = document.getElementById('start-adventure-btn');
+                    if (document.activeElement === startButton && !startButton.disabled) {
+                        window.playerModule.startAdventure();
+                    }
+                }
+            });
+        }
+
+        /**
+         * 選択状況チェックの更新
+         */
+        function updateSelectionCheck() {
+            setTimeout(() => {
+                const gameState = getGameState();
+                const checkElement = document.getElementById('monster-selection-check');
+                
+                if (checkElement && gameState.selectedMonster) {
+                    checkElement.innerHTML = `
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm">✓</span>
+                        </div>
+                        <span class="text-gray-700">パートナーモンスター選択完了</span>
+                    `;
+                }
+            }, 100);
+        }
+
+        /**
+         * ページ離脱時の確認
+         */
+        window.addEventListener('beforeunload', (event) => {
+            const gameState = getGameState();
+            if (gameState.playerName && !gameState.selectedMonster) {
+                event.preventDefault();
+                return 'モンスターを選択せずに離脱しますか？';
+            }
+        });
+    </script>
+</body>
+</html>
