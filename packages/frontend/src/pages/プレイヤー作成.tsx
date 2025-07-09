@@ -13,7 +13,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { User, ArrowLeft, Loader2 } from 'lucide-react';
 import { ゲームボタン } from '../components/ゲームボタン';
 import { ゲームカード } from '../components/ゲームカード';
+import { モンスター選択セクション } from '../components/モンスター選択セクション';
 import { useプレイヤー名 } from '../hooks/useプレイヤー名';
+import { useモンスター選択 } from '../hooks/useモンスター選択';
 
 /**
  * プレイヤー作成ページコンポーネント
@@ -28,6 +30,7 @@ export function プレイヤー作成() {
   const navigate = useNavigate();
   const location = useLocation();
   const { プレイヤー名: カスタムフックプレイヤー名, setプレイヤー名 } = useプレイヤー名();
+  const { 選択モンスター, 選択済み } = useモンスター選択();
   
   // フォームの状態管理
   const [フォームデータ, setフォームデータ] = useState({
@@ -74,7 +77,7 @@ export function プレイヤー作成() {
    * フォーム送信時のハンドラー
    * 
    * 初学者向けメモ：
-   * - フォームバリデーション
+   * - フォームバリデーション（プレイヤー名 + モンスター選択）
    * - API通信
    * - 成功時のリダイレクト
    * - エラーハンドリング
@@ -82,7 +85,7 @@ export function プレイヤー作成() {
   const フォーム送信ハンドラー = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // バリデーション
+    // プレイヤー名バリデーション
     if (!フォームデータ.名前.trim()) {
       setエラー('プレイヤー名を入力してください');
       return;
@@ -90,6 +93,12 @@ export function プレイヤー作成() {
     
     if (フォームデータ.名前.length > 20) {
       setエラー('プレイヤー名は20文字以内で入力してください');
+      return;
+    }
+
+    // モンスター選択バリデーション
+    if (!選択済み) {
+      setエラー('パートナーモンスターを選択してください');
       return;
     }
     
@@ -105,6 +114,13 @@ export function プレイヤー作成() {
         },
         body: JSON.stringify({
           名前: フォームデータ.名前.trim(),
+          スターターモンスター: {
+            id: 選択モンスター.id,
+            名前: 選択モンスター.名前,
+            種類: 選択モンスター.種類,
+            レアリティ: 選択モンスター.レアリティ,
+            レベル: 5 // スターターモンスターは自動的にレベル5
+          }
         }),
       });
       
@@ -223,7 +239,7 @@ export function プレイヤー作成() {
               <ゲームボタン
                 type="submit"
                 variant="primary"
-                disabled={送信中 || !フォームデータ.名前.trim()}
+                disabled={送信中 || !フォームデータ.名前.trim() || !選択済み}
                 className="min-w-[120px]"
               >
                 {送信中 ? (
@@ -234,7 +250,7 @@ export function プレイヤー作成() {
                 ) : (
                   <>
                     <User className="h-4 w-4 mr-2" />
-                    プレイヤーを作成
+                    冒険を開始
                   </>
                 )}
               </ゲームボタン>
@@ -242,6 +258,17 @@ export function プレイヤー作成() {
           </form>
         </ゲームカード.Content>
       </ゲームカード>
+
+      {/* モンスター選択セクション */}
+      <モンスター選択セクション 
+        on選択変更={(モンスター) => {
+          console.log('モンスター選択変更:', モンスター);
+          // エラーがある場合はクリア
+          if (エラー && エラー.includes('モンスター')) {
+            setエラー(null);
+          }
+        }}
+      />
 
       {/* 説明セクション */}
       <ゲームカード variant="outlined" padding="lg" className="bg-gray-50">
