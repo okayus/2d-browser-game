@@ -27,6 +27,7 @@ interface CardProps {
 interface CardHeaderProps {
   children: React.ReactNode
   className?: string
+  'data-testid'?: string
 }
 
 /**
@@ -35,6 +36,7 @@ interface CardHeaderProps {
 interface CardContentProps {
   children: React.ReactNode
   className?: string
+  'data-testid'?: string
 }
 
 /**
@@ -43,6 +45,7 @@ interface CardContentProps {
 interface CardFooterProps {
   children: React.ReactNode
   className?: string
+  'data-testid'?: string
 }
 
 /**
@@ -83,9 +86,9 @@ export function Card({
  * カードヘッダーコンポーネント
  * タイトルやアクションボタンを配置
  */
-export function CardHeader({ children, className }: CardHeaderProps) {
+export function CardHeader({ children, className, 'data-testid': testId }: CardHeaderProps) {
   return (
-    <div className={cn('px-6 py-4 border-b border-gray-200', className)}>
+    <div className={cn('px-6 py-4 border-b border-gray-200', className)} data-testid={testId}>
       {children}
     </div>
   )
@@ -95,9 +98,9 @@ export function CardHeader({ children, className }: CardHeaderProps) {
  * カードコンテンツコンポーネント
  * メインの内容を配置
  */
-export function CardContent({ children, className }: CardContentProps) {
+export function CardContent({ children, className, 'data-testid': testId }: CardContentProps) {
   return (
-    <div className={cn('px-6 py-4', className)}>
+    <div className={cn('px-6 py-4', className)} data-testid={testId}>
       {children}
     </div>
   )
@@ -107,9 +110,9 @@ export function CardContent({ children, className }: CardContentProps) {
  * カードフッターコンポーネント
  * アクションボタンや補足情報を配置
  */
-export function CardFooter({ children, className }: CardFooterProps) {
+export function CardFooter({ children, className, 'data-testid': testId }: CardFooterProps) {
   return (
-    <div className={cn('px-6 py-4 bg-gray-50 rounded-b-lg border-t border-gray-200', className)}>
+    <div className={cn('px-6 py-4 bg-gray-50 rounded-b-lg border-t border-gray-200', className)} data-testid={testId}>
       {children}
     </div>
   )

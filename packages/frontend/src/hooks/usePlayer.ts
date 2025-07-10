@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react'
 import { playerAPI, APIError } from '../api'
 import type { PlayerCreationResponse, PlayerResponse } from '../types/api'
-import { getStorageData, setStorageData } from '../lib/utils'
+import { setStorageData } from '../lib/utils'
 
 /**
  * プレイヤー情報の型定義

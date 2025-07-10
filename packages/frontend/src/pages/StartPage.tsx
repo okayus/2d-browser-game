@@ -16,7 +16,7 @@ export function StartPage() {
   const navigate = useNavigate()
   
   // プレイヤー管理フック
-  const { player, isLoading: playerLoading, error: playerError, createPlayer, getPlayer, clearError } = usePlayer()
+  const { isLoading: playerLoading, error: playerError, createPlayer, getPlayer, clearError } = usePlayer()
   
   // コンポーネントの状態管理
   const [playerName, setPlayerName] = useState('')

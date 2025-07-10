@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, CardHeader, CardContent, CardFooter, Input } from '../components/ui'
-import { getGameState, MONSTER_TYPES, validatePlayerName, getStorageData, type MonsterType } from '../lib/utils'
+import { getGameState, MONSTER_TYPES, validatePlayerName, getStorageData } from '../lib/utils'
 import { useMonsters, type OwnedMonster } from '../hooks'
 
 // useMonsters フックから型を取得するため、ここでの型定義は不要
@@ -30,7 +30,6 @@ export function MonsterListPage() {
   
   // 状態管理
   const [playerName, setPlayerName] = useState('')
-  const [playerId, setPlayerId] = useState('')
   const [editingMonster, setEditingMonster] = useState<string | null>(null)
   const [editNickname, setEditNickname] = useState('')
   const [sortBy, setSortBy] = useState<'capturedAt' | 'name' | 'species'>('capturedAt')
@@ -52,7 +51,6 @@ export function MonsterListPage() {
     setPlayerName(gameState.playerName)
     
     if (storedPlayerId && typeof storedPlayerId === 'string') {
-      setPlayerId(storedPlayerId)
       // バックエンドからモンスター一覧を取得
       loadMonsters(storedPlayerId)
     } else {
@@ -78,10 +76,11 @@ export function MonsterListPage() {
       switch (sortBy) {
         case 'capturedAt':
           return new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
-        case 'name':
+        case 'name': {
           const nameA = a.nickname || a.species.name
           const nameB = b.nickname || b.species.name
           return nameA.localeCompare(nameB)
+        }
         case 'species':
           return a.species.name.localeCompare(b.species.name)
         default:

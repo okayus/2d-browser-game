@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllMonsters, getGameState, updateGameState, getStorageData, type MonsterType } from '../lib/utils'
+import { getAllMonsters, getGameState, updateGameState, type MonsterType } from '../lib/utils'
 
 /**
  * プレイヤー作成画面のメインコンポーネント
