@@ -3,7 +3,7 @@
   // 初学者向けメモ：jsonc形式でコメントが書けるため、より分かりやすい設定が可能
   
   "name": "monster-game-backend",
-  "main": "src/index.ts",
+  "main": "src/index.minimal.ts",
   "compatibility_date": "2024-01-01",
   
   // D1データベース設定
@@ -22,6 +22,14 @@
     // 開発環境設定
     "development": {
       "name": "monster-game-backend-dev",
+      "d1_databases": [
+        {
+          "binding": "DB", // Workers内でenv.DBとしてアクセス可能
+          "database_name": "monster-game-dev",
+          "database_id": "deb0b7fc-c860-49df-978c-dda97da702b2", // wrangler d1 createで生成されたID
+          "preview_database_id": "local-monster-game" // ローカル開発用の識別子
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "development",
         "LOG_LEVEL": "debug"
@@ -50,9 +58,9 @@
   "compatibility_flags": ["nodejs_compat"],
   
   // ビルド設定
-  "build": {
-    "command": "npm run build"
-  },
+  // "build": {
+  //   "command": "tsc"
+  // },
   
   // 開発サーバー設定
   "dev": {

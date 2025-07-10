@@ -8,7 +8,7 @@
  */
 
 import * as schema from './schema';
-import { uuid生成 } from '@monster-game/shared';
+import { uuid生成 } from '../utils/uuid';
 import type { データベース型 } from './types';
 
 /**

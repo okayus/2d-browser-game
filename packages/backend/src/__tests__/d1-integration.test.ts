@@ -9,10 +9,10 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { unstable_dev } from 'wrangler';
-import type { UnstableDevWorker } from 'wrangler';
+import type { Unstable_DevWorker } from 'wrangler';
 
 describe.skip('D1統合テスト', () => {
-  let worker: UnstableDevWorker;
+  let worker: Unstable_DevWorker;
 
   // テスト開始前にWorkerを起動
   beforeAll(async () => {

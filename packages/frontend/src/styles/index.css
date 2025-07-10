@@ -1,0 +1,189 @@
+/**
+ * グローバルスタイル定義
+ * Tailwind CSS と カスタムスタイルを組み合わせ
+ */
+
+/* CSS カスタムプロパティ（CSS変数）の定義 */
+:root {
+  /* カラーパレット */
+  --primary-blue: #2563eb;
+  --primary-green: #16a34a;
+  --primary-purple: #9333ea;
+  --accent-yellow: #eab308;
+  --neutral-gray: #6b7280;
+  
+  /* アニメーション設定 */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+  
+  /* ゲーム固有の設定 */
+  --map-tile-size: 48px;
+  --character-size: 40px;
+}
+
+/* フォントの最適化 */
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* アニメーション定義 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  :root {
+    --map-tile-size: 40px;
+    --character-size: 32px;
+  }
+}
+
+/* プリファレンス対応 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* プロトタイプ風のスタイリングを強制適用 */
+.prototype-background {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.prototype-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 28rem;
+  width: 100%;
+}
+
+/* より大きなコンテンツ用の拡張カードスタイル */
+.prototype-card.max-w-7xl {
+  max-width: 80rem;
+}
+
+/* ゲームマップコンテナのグリッドレイアウト強制 */
+[data-game-map] {
+  display: grid !important;
+  grid-template-columns: repeat(10, var(--map-tile-size)) !important;
+  grid-template-rows: repeat(8, var(--map-tile-size)) !important;
+  gap: 2px !important;
+  background-color: #e5e7eb;
+  padding: 8px;
+  border-radius: 8px;
+  max-width: fit-content;
+  margin: 0 auto;
+}
+
+/* ゲームマップ用のスタイル */
+.map-tile {
+  width: var(--map-tile-size);
+  height: var(--map-tile-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* 地形タイプ別の背景色 */
+.tile-grass {
+  background-color: #a3d977;
+  background-image: linear-gradient(45deg, #a3d977 0%, #8bc34a 100%);
+}
+
+.tile-town {
+  background-color: #8b7355;
+  background-image: linear-gradient(45deg, #8b7355 0%, #6d5940 100%);
+}
+
+.tile-mountain {
+  background-color: #6b7280;
+  background-image: linear-gradient(45deg, #6b7280 0%, #4b5563 100%);
+}
+
+.tile-water {
+  background-color: #3b82f6;
+  background-image: linear-gradient(45deg, #3b82f6 0%, #2563eb 100%);
+}
+
+/* 現在位置のタイル強調 */
+.tile-current {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+/* プレイヤーキャラクター */
+.character {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  animation: bounce 2s infinite;
+}
+
+/* プレイヤーキャラクターのアニメーション */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-1px);
+  }
+}

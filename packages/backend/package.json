@@ -4,9 +4,11 @@
   "description": "モンスター収集ゲーム - バックエンドAPI",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
-    "build": "wrangler build",
+    "dev": "wrangler dev --env development",
+    "build": "wrangler build --env development",
     "deploy": "wrangler deploy",
+    "dev:prod": "wrangler dev --env production",
+    "dev:local": "wrangler dev",
     "test": "vitest run",
     "test:unit": "vitest run src/__tests__/api/ src/__tests__/db/",
     "test:coverage": "vitest --coverage",
@@ -20,24 +22,22 @@
     "seed:reset": "tsx src/db/seedスクリプト.ts --reset"
   },
   "dependencies": {
-    "hono": "^3.12.0",
-    "drizzle-orm": "^0.29.0",
-    "zod": "^3.22.0",
     "@hono/zod-validator": "^0.2.0",
-    "nanoid": "^5.0.0",
-    "@monster-game/shared": "workspace:*"
+    "drizzle-orm": "^0.29.0",
+    "hono": "^3.12.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
-    "wrangler": "^3.19.0",
-    "drizzle-kit": "^0.20.0",
-    "better-sqlite3": "^9.0.0",
     "@types/better-sqlite3": "^7.6.0",
-    "vitest": "^1.6.1",
-    "typescript": "^5.0.0",
-    "eslint": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "tsx": "^4.0.0"
+    "better-sqlite3": "^9.0.0",
+    "drizzle-kit": "^0.20.0",
+    "eslint": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.1",
+    "wrangler": "^4.24.0"
   }
 }

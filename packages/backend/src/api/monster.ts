@@ -13,7 +13,7 @@ import { zValidator } from '@hono/zod-validator';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, and, desc } from 'drizzle-orm';
 import * as schema from '../db/schema';
-import { uuid生成 } from '@monster-game/shared';
+import { uuid生成 } from '../utils/uuid';
 
 // HTTPレスポンス型定義（一時的な実装）
 interface HTTPレスポンス型<T = unknown> {

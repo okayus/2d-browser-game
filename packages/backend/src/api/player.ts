@@ -18,7 +18,7 @@ import { プレイヤー, モンスター種族, 所持モンスター } from '.
 // import { nanoid } from 'nanoid'; // 一意IDの生成用
 import type { データベース型 } from '../db/types';
 import { ロガー } from '../utils/logger';
-import { uuid生成 } from '@monster-game/shared';
+import { uuid生成 } from '../utils/uuid';
 // import type { プレイヤー応答, プレイヤー一覧応答, エラー応答 } from '@monster-game/shared'; // 将来の実装で使用
 
 // プレイヤー作成リクエストの検証スキーマ
