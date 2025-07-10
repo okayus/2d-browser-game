@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モンスター収集ゲーム - マップ</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- カスタムCSS -->
+    <link rel="stylesheet" href="css/custom.css">
+    
+    <!-- メタ情報 -->
+    <meta name="description" content="プログラミング学習用モンスター収集ゲーム - マップ画面">
+    
+    <!-- ファビコン -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+</head>
+<body class="bg-gradient-game min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-white/90 backdrop-blur-sm shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🗺️</span>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">モンスター収集ゲーム</h1>
+                        <p class="text-sm text-gray-600">マップ探索</p>
+                    </div>
+                </div>
+                
+                <!-- ナビゲーションボタン -->
+                <div class="flex items-center space-x-2">
+                    <button 
+                        id="back-to-creation-btn"
+                        class="btn-hover-scale bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-300"
+                    >
+                        ← プレイヤー作成
+                    </button>
+                    <button 
+                        id="restart-game-btn"
+                        class="btn-hover-scale bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-300"
+                    >
+                        🔄 最初から
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- マップエリア（メイン） -->
+            <div class="lg:col-span-3 space-y-4">
+                
+                <!-- マップコンテナ -->
+                <div class="bg-white/90 rounded-lg shadow-game p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-900">🗺️ ワールドマップ</h2>
+                        <div class="text-sm text-gray-600">
+                            矢印キーまたはWASDで移動
+                        </div>
+                    </div>
+                    
+                    <!-- マップ -->
+                    <div class="flex justify-center">
+                        <div id="game-map" class="relative border-2 border-gray-300 rounded-lg overflow-hidden">
+                            <!-- マップがここに動的に生成される -->
+                        </div>
+                    </div>
+                    
+                    <!-- 操作説明 -->
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
+                        <div class="flex items-center space-x-1">
+                            <span class="font-mono bg-gray-100 px-2 py-1 rounded">↑</span>
+                            <span>上に移動</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="font-mono bg-gray-100 px-2 py-1 rounded">↓</span>
+                            <span>下に移動</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="font-mono bg-gray-100 px-2 py-1 rounded">←</span>
+                            <span>左に移動</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="font-mono bg-gray-100 px-2 py-1 rounded">→</span>
+                            <span>右に移動</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- メッセージエリア -->
+                <div class="bg-white/90 rounded-lg shadow-md p-4">
+                    <h3 class="font-bold text-gray-900 mb-3">📝 メッセージ</h3>
+                    <div id="movement-messages" class="space-y-2 max-h-32 overflow-y-auto">
+                        <div class="message-info bg-blue-100 text-blue-700 border border-blue-300 px-3 py-2 rounded-lg text-sm">
+                            冒険を開始しました！矢印キーまたはWASDで移動できます。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- タイル情報エリア -->
+                <div id="tile-info" class="min-h-[80px]">
+                    <!-- タイル情報がここに表示される -->
+                </div>
+            </div>
+
+            <!-- サイドパネル -->
+            <div class="lg:col-span-1 space-y-4">
+                
+                <!-- プレイヤー情報パネル -->
+                <div id="player-panel">
+                    <!-- プレイヤー情報がここに動的に表示される -->
+                </div>
+
+                <!-- マップ凡例 -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="font-bold text-gray-900 mb-3">🗺️ マップ凡例</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-6 h-6 tile-grass rounded border"></div>
+                            <span>🌱 草原（移動可能）</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-6 h-6 tile-town rounded border"></div>
+                            <span>🏘️ 街（移動可能）</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-6 h-6 tile-mountain rounded border"></div>
+                            <span>⛰️ 山（移動不可）</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-6 h-6 tile-water rounded border"></div>
+                            <span>🌊 水辺（移動不可）</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="character w-6 h-6 rounded border scale-75"></div>
+                            <span>🧙‍♂️ あなた</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- コントロールパネル -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="font-bold text-gray-900 mb-3">🎮 コントロール</h3>
+                    <div class="space-y-3">
+                        
+                        <!-- 移動ボタン（モバイル用） -->
+                        <div class="md:hidden">
+                            <p class="text-sm text-gray-600 mb-2">タップで移動:</p>
+                            <div class="grid grid-cols-3 gap-1 w-24 mx-auto">
+                                <div></div>
+                                <button id="move-up" class="bg-blue-500 text-white rounded p-2 text-sm">↑</button>
+                                <div></div>
+                                <button id="move-left" class="bg-blue-500 text-white rounded p-2 text-sm">←</button>
+                                <button id="info-btn" class="bg-green-500 text-white rounded p-2 text-xs">📍</button>
+                                <button id="move-right" class="bg-blue-500 text-white rounded p-2 text-sm">→</button>
+                                <div></div>
+                                <button id="move-down" class="bg-blue-500 text-white rounded p-2 text-sm">↓</button>
+                                <div></div>
+                            </div>
+                        </div>
+
+                        <!-- キーボードショートカット -->
+                        <div class="hidden md:block">
+                            <p class="text-sm text-gray-600 mb-2">キーボード操作:</p>
+                            <div class="text-xs text-gray-500 space-y-1">
+                                <div>• 矢印キー: 移動</div>
+                                <div>• WASD: 移動</div>
+                                <div>• スペース: 現在地情報</div>
+                            </div>
+                        </div>
+
+                        <!-- アクションボタン -->
+                        <div class="pt-3 border-t border-gray-200">
+                            <button 
+                                id="center-map-btn"
+                                class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-3 rounded text-sm font-medium transition-colors duration-300"
+                            >
+                                📍 現在地を表示
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学習ポイント -->
+                <div class="bg-white/80 rounded-lg p-4">
+                    <h3 class="font-bold text-gray-900 mb-3 text-sm">🎓 学習ポイント</h3>
+                    <div class="text-xs text-gray-700 space-y-2">
+                        <div>
+                            <strong>2Dゲーム開発</strong>
+                            <ul class="mt-1 space-y-1 text-gray-600">
+                                <li>• グリッドベースマップ</li>
+                                <li>• キャラクター移動制御</li>
+                                <li>• 当たり判定システム</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong>UI/UX設計</strong>
+                            <ul class="mt-1 space-y-1 text-gray-600">
+                                <li>• レスポンシブレイアウト</li>
+                                <li>• キーボード操作対応</li>
+                                <li>• アクセシビリティ配慮</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white/80 backdrop-blur-sm border-t border-gray-200 mt-8">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="text-center text-gray-600 text-sm">
+                <p>学習用プロジェクト | HTML + CSS + JavaScript プロトタイプ</p>
+                <p class="mt-1">次のステップ: React実装でのコンポーネント化</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/common.js"></script>
+    <script src="js/map.js"></script>
+    <script>
+        /**
+         * マップ画面の初期化と処理
+         * 
+         * 初学者向けメモ：
+         * - map.jsの機能を活用
+         * - モバイル対応のタッチ操作
+         * - アクセシビリティ対応
+         */
+
+        // 初期化処理
+        onDOMReady(() => {
+            // マップ画面を初期化
+            window.mapModule.initializeMapPage();
+            
+            // モバイル向けコントロールを設定
+            setupMobileControls();
+            
+            // 追加のイベントリスナーを設定
+            setupAdditionalEventListeners();
+            
+            debugLog('Map Page Ready', getGameState());
+        });
+
+        /**
+         * モバイル向けコントロールの設定
+         */
+        function setupMobileControls() {
+            // 移動ボタン
+            const moveUp = document.getElementById('move-up');
+            const moveDown = document.getElementById('move-down');
+            const moveLeft = document.getElementById('move-left');
+            const moveRight = document.getElementById('move-right');
+            const infoBtn = document.getElementById('info-btn');
+
+            if (moveUp) moveUp.addEventListener('click', () => window.mapModule.movePlayer(0, -1));
+            if (moveDown) moveDown.addEventListener('click', () => window.mapModule.movePlayer(0, 1));
+            if (moveLeft) moveLeft.addEventListener('click', () => window.mapModule.movePlayer(-1, 0));
+            if (moveRight) moveRight.addEventListener('click', () => window.mapModule.movePlayer(1, 0));
+            if (infoBtn) {
+                infoBtn.addEventListener('click', () => {
+                    const gameState = getGameState();
+                    const pos = gameState.playerPosition || { x: 5, y: 4 };
+                    window.mapModule.showTileInfo(pos.x, pos.y);
+                });
+            }
+        }
+
+        /**
+         * 追加のイベントリスナー設定
+         */
+        function setupAdditionalEventListeners() {
+            // 戻るボタン
+            const backButton = document.getElementById('back-to-creation-btn');
+            if (backButton) {
+                backButton.addEventListener('click', () => {
+                    if (confirm('プレイヤー作成画面に戻りますか？')) {
+                        navigateToPage('player-creation');
+                    }
+                });
+            }
+
+            // リスタートボタン
+            const restartButton = document.getElementById('restart-game-btn');
+            if (restartButton) {
+                restartButton.addEventListener('click', () => {
+                    if (confirm('ゲームを最初からやり直しますか？すべてのデータが削除されます。')) {
+                        resetGameState();
+                        navigateToPage('index');
+                    }
+                });
+            }
+
+            // 現在地表示ボタン
+            const centerMapButton = document.getElementById('center-map-btn');
+            if (centerMapButton) {
+                centerMapButton.addEventListener('click', () => {
+                    const gameState = getGameState();
+                    const pos = gameState.playerPosition || { x: 5, y: 4 };
+                    window.mapModule.showTileInfo(pos.x, pos.y);
+                });
+            }
+
+            // タッチジェスチャー対応（スワイプ移動）
+            setupTouchGestures();
+        }
+
+        /**
+         * タッチジェスチャーの設定
+         */
+        function setupTouchGestures() {
+            const mapElement = document.getElementById('game-map');
+            if (!mapElement) return;
+
+            let startX = 0;
+            let startY = 0;
+            let endX = 0;
+            let endY = 0;
+
+            mapElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+            });
+
+            mapElement.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            });
+
+            mapElement.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                endX = touch.clientX;
+                endY = touch.clientY;
+
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                const minSwipeDistance = 30;
+
+                // スワイプ方向を判定
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // 横方向のスワイプ
+                    if (Math.abs(deltaX) > minSwipeDistance) {
+                        if (deltaX > 0) {
+                            window.mapModule.movePlayer(1, 0); // 右
+                        } else {
+                            window.mapModule.movePlayer(-1, 0); // 左
+                        }
+                    }
+                } else {
+                    // 縦方向のスワイプ
+                    if (Math.abs(deltaY) > minSwipeDistance) {
+                        if (deltaY > 0) {
+                            window.mapModule.movePlayer(0, 1); // 下
+                        } else {
+                            window.mapModule.movePlayer(0, -1); // 上
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * ページ離脱時の確認
+         */
+        window.addEventListener('beforeunload', (event) => {
+            // プレイ中の場合は確認
+            const gameState = getGameState();
+            if (gameState.gameState === 'playing') {
+                event.preventDefault();
+                return 'ゲームを中断しますか？進行状況は保存されます。';
+            }
+        });
+
+        /**
+         * ウィンドウフォーカス復帰時の処理
+         */
+        window.addEventListener('focus', () => {
+            // プレイヤー情報パネルを更新（他のタブで変更があった場合に対応）
+            setTimeout(() => {
+                window.mapModule.updatePlayerPanel();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

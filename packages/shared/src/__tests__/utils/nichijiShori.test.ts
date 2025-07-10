@@ -14,7 +14,7 @@ import {
   日時文字列をDate変換,
   日時を日本語でフォーマット,
   相対日時表示
-} from '../../utils/日時処理';
+} from '../../utils/nichijiShori';
 
 describe('日時処理ユーティリティ単体テスト', () => {
   /**

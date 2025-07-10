@@ -12,12 +12,12 @@ import { Hono } from 'hono';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { プレイヤー, モンスター種族, 所持モンスター } from '../db/スキーマ';
+import { プレイヤー, モンスター種族, 所持モンスター } from '../db/schema';
 // CI環境対応のため、nanoidではなくuuid生成()を使用
 // nanoid 5.0.0はNode.js環境でCrypto APIを要求するが、CI環境では利用できない場合がある
 // import { nanoid } from 'nanoid'; // 一意IDの生成用
-import type { データベース型 } from '../db/型定義';
-import { ロガー } from '../utils/ロガー';
+import type { データベース型 } from '../db/kataTeigi';
+import { ロガー } from '../utils/logger';
 import { uuid生成 } from '@monster-game/shared';
 // import type { プレイヤー応答, プレイヤー一覧応答, エラー応答 } from '@monster-game/shared'; // 将来の実装で使用
 

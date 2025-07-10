@@ -38,7 +38,7 @@ export interface API応答<T = unknown> {
  * - 相対パスでの型インポート
  * - モジュラーな型定義の管理
  */
-import type { プレイヤー } from './プレイヤー';
+import type { プレイヤー } from './player';
 
 /**
  * プレイヤー作成・取得API応答

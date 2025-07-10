@@ -10,11 +10,11 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { drizzle } from 'drizzle-orm/d1';
-import * as schema from './db/スキーマ';
-import { データベース初期化 } from './db/マイグレーション';
-import { ロガー } from './utils/ロガー';
-import { プレイヤールーター } from './api/プレイヤー';
-import モンスターAPI from './api/モンスター';
+import * as schema from './db/schema';
+import { データベース初期化 } from './db/migration';
+import { ロガー } from './utils/logger';
+import { プレイヤールーター } from './api/Player';
+import モンスターAPI from './api/Monster';
 
 // Cloudflare Workers の環境変数型定義
 type Bindings = {

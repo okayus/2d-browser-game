@@ -7,9 +7,9 @@
  * - 開発環境・本番環境の両方で使用可能
  */
 
-import * as schema from './スキーマ';
+import * as schema from './schema';
 import { uuid生成 } from '@monster-game/shared';
-import type { データベース型 } from './型定義';
+import type { データベース型 } from './kataTeigi';
 
 /**
  * モンスター種族の初期データ

@@ -12,11 +12,11 @@ import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
-import * as schema from '../db/スキーマ';
-import { プレイヤールーター } from '../api/プレイヤー';
-import モンスターAPI from '../api/モンスター';
+import * as schema from '../db/schema';
+import { プレイヤールーター } from '../api/Player';
+import モンスターAPI from '../api/Monster';
 import { 初期データ投入 } from '../db/seed';
-import type { データベース型 } from '../db/型定義';
+import type { データベース型 } from '../db/kataTeigi';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
 
 // APIレスポンスの型定義
