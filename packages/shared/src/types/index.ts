@@ -12,3 +12,5 @@ export * from './battle.js';
 // API関連の型
 export * from './api.js';
 export * from './apiOuto.js';
+// 英語エイリアス
+export * from './aliases.js';
