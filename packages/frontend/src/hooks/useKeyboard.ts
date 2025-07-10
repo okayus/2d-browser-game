@@ -151,7 +151,7 @@ export const createKeyMap = (
   });
 
   // KEYBOARD_SHORTCUTSを使った場合の処理
-  Object.entries(KEYBOARD_SHORTCUTS).forEach(([_name, keys]) => {
+  Object.entries(KEYBOARD_SHORTCUTS).forEach(([, keys]) => {
     const handler = shortcuts[keys.join(',')] as KeyHandler | undefined;
     if (handler && typeof handler === 'function') {
       keys.forEach(key => {

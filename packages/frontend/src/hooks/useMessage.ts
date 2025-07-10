@@ -27,6 +27,11 @@ export interface MessageItem {
 export const useMessage = () => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
 
+  // メッセージを削除
+  const removeMessage = useCallback((id: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== id));
+  }, []);
+
   // メッセージを表示
   const showMessage = useCallback(
     (type: MessageItem['type'], message: string) => {
@@ -42,13 +47,8 @@ export const useMessage = () => {
         removeMessage(id);
       }, 5000);
     },
-    []
+    [removeMessage]
   );
-
-  // メッセージを削除
-  const removeMessage = useCallback((id: string) => {
-    setMessages(prev => prev.filter(msg => msg.id !== id));
-  }, []);
 
   // すべてのメッセージをクリア
   const clearMessages = useCallback(() => {
