@@ -1,196 +1,269 @@
-import { useState, useCallback, useEffect } from 'react';
+/**
+ * 統合ゲーム状態管理のカスタムフック
+ * 初学者向け: D1データベース連携とセッション管理を統合
+ * 
+ * 以前のlocalStorage版から、API連携版にリファクタリング
+ */
+
+import { useCallback, useEffect, useMemo } from 'react';
+import { usePlayer } from './usePlayer';
+import { useMonsters } from './useMonsters';
+import { useGameSession, type GamePhase } from './useGameSession';
 import type { Monster, Player } from '@monster-game/shared';
 
-// 初学者向けメモ：
-// ゲームの状態を表す型定義
-// gamePhase: ゲームの現在のフェーズ（開始画面、プレイヤー作成中、プレイ中など）
-export type GamePhase = 'start' | 'playerCreation' | 'playing' | 'battle';
-
+// 統合ゲーム状態の型定義
 export interface GameState {
+  // プレイヤー情報（D1データベースから取得）
   player: Player | null;
+  // 選択中のモンスター（sessionStorageで管理）
   selectedMonster: Monster | null;
+  // 所持モンスター一覧（D1データベースから取得）
   ownedMonsters: Monster[];
+  // プレイヤー位置（sessionStorageで管理）
   playerPosition: { x: number; y: number };
+  // ゲームフェーズ（sessionStorageで管理）
   gamePhase: GamePhase;
 }
 
-// ローカルストレージのキー
-const STORAGE_KEYS = {
-  PLAYER: 'player',
-  SELECTED_MONSTER: 'selected_monster',
-  OWNED_MONSTERS: 'owned_monsters',
-  PLAYER_POSITION: 'player_position',
-  GAME_PHASE: 'game_phase',
-} as const;
-
-// デフォルトの位置
-const DEFAULT_POSITION = { x: 5, y: 4 };
+// 統合フックの戻り値型
+export interface UseGameStateResult {
+  // 統合されたゲーム状態
+  gameState: GameState;
+  // ローディング状態
+  loading: boolean;
+  // エラー情報
+  error: string | null;
+  // プレイヤー操作
+  createPlayer: (name: string) => Promise<boolean>;
+  selectPlayer: (playerId: string) => Promise<boolean>;
+  logout: () => void;
+  // モンスター操作
+  refreshMonsters: () => Promise<void>;
+  updateMonsterNickname: (monsterId: string, nickname: string) => Promise<boolean>;
+  releaseMonster: (monsterId: string) => Promise<boolean>;
+  selectMonster: (monster: Monster | null) => void;
+  // セッション操作
+  setGamePhase: (phase: GamePhase) => void;
+  movePlayer: (deltaX: number, deltaY: number) => void;
+  setPlayerPosition: (position: { x: number; y: number }) => void;
+  // ゲーム操作
+  startBattle: (action: 'attack' | 'capture') => Promise<unknown>;
+  // 状態リセット
+  resetGame: () => void;
+}
 
 /**
- * ゲーム状態を管理するカスタムフック
+ * 統合ゲーム状態管理カスタムフック
+ * 
+ * 初学者向けメモ：
+ * - 複数の個別フックを組み合わせて統合的なゲーム状態を提供
+ * - D1データベース: プレイヤー・モンスターの永続データ
+ * - sessionStorage: 位置・フェーズの一時データ
+ * - localStorage: 最後に選択したプレイヤーIDのみ
  * 
  * @example
- * const { gameState, updatePlayer, selectMonster } = useGameState();
+ * const { gameState, createPlayer, selectMonster, movePlayer, loading } = useGameState();
+ * 
+ * // プレイヤー作成
+ * const success = await createPlayer('新しいプレイヤー');
+ * 
+ * // モンスター選択
+ * selectMonster(gameState.ownedMonsters[0]);
+ * 
+ * // プレイヤー移動
+ * movePlayer(1, 0); // 右に1マス
  */
-export const useGameState = () => {
-  // 初期状態をローカルストレージから復元
-  const [gameState, setGameState] = useState<GameState>(() => {
-    const savedState: Partial<GameState> = {};
+export const useGameState = (): UseGameStateResult => {
+  // 個別フックの使用
+  const playerHook = usePlayer();
+  const monstersHook = useMonsters();
+  const sessionHook = useGameSession();
 
-    // プレイヤー情報を復元
-    const savedPlayer = localStorage.getItem(STORAGE_KEYS.PLAYER);
-    if (savedPlayer) {
-      try {
-        savedState.player = JSON.parse(savedPlayer);
-      } catch (e) {
-        console.error('プレイヤー情報の復元に失敗:', e);
-      }
+  // 統合されたゲーム状態（計算値）
+  const gameState = useMemo<GameState>(() => ({
+    player: playerHook.currentPlayer,
+    selectedMonster: monstersHook.selectedMonster,
+    ownedMonsters: monstersHook.monsters,
+    playerPosition: sessionHook.playerPosition,
+    gamePhase: sessionHook.gamePhase,
+  }), [
+    playerHook.currentPlayer,
+    monstersHook.selectedMonster,
+    monstersHook.monsters,
+    sessionHook.playerPosition,
+    sessionHook.gamePhase,
+  ]);
+
+  // 統合されたローディング状態
+  const loading = playerHook.loading || monstersHook.loading;
+  
+  // 統合されたエラー状態
+  const error = playerHook.error || monstersHook.error;
+
+  // プレイヤー作成
+  const createPlayer = useCallback(async (name: string): Promise<boolean> => {
+    const player = await playerHook.createPlayer(name);
+    if (player) {
+      // プレイヤー作成成功時にモンスター一覧を取得
+      await monstersHook.fetchMonsters(player.id);
+      return true;
     }
+    return false;
+  }, [playerHook, monstersHook]);
 
-    // 選択されたモンスターを復元
-    const savedSelectedMonster = localStorage.getItem(STORAGE_KEYS.SELECTED_MONSTER);
-    if (savedSelectedMonster) {
-      try {
-        savedState.selectedMonster = JSON.parse(savedSelectedMonster);
-      } catch (e) {
-        console.error('選択モンスター情報の復元に失敗:', e);
-      }
+  // プレイヤー選択
+  const selectPlayer = useCallback(async (playerId: string): Promise<boolean> => {
+    const player = await playerHook.getPlayer(playerId);
+    if (player) {
+      // プレイヤー選択成功時にモンスター一覧を取得
+      await monstersHook.fetchMonsters(player.id);
+      return true;
     }
+    return false;
+  }, [playerHook, monstersHook]);
 
-    // 所持モンスターを復元
-    const savedOwnedMonsters = localStorage.getItem(STORAGE_KEYS.OWNED_MONSTERS);
-    if (savedOwnedMonsters) {
-      try {
-        savedState.ownedMonsters = JSON.parse(savedOwnedMonsters);
-      } catch (e) {
-        console.error('所持モンスター情報の復元に失敗:', e);
-      }
-    }
+  // ログアウト
+  const logout = useCallback(() => {
+    playerHook.logout();
+    monstersHook.reset();
+    sessionHook.resetSession();
+  }, [playerHook, monstersHook, sessionHook]);
 
-    // プレイヤー位置を復元
-    const savedPosition = localStorage.getItem(STORAGE_KEYS.PLAYER_POSITION);
-    if (savedPosition) {
-      try {
-        savedState.playerPosition = JSON.parse(savedPosition);
-      } catch (e) {
-        console.error('プレイヤー位置の復元に失敗:', e);
-      }
-    }
-
-    // ゲームフェーズを復元
-    const savedPhase = localStorage.getItem(STORAGE_KEYS.GAME_PHASE);
-    if (savedPhase) {
-      savedState.gamePhase = savedPhase as GamePhase;
-    }
-
-    return {
-      player: savedState.player || null,
-      selectedMonster: savedState.selectedMonster || null,
-      ownedMonsters: savedState.ownedMonsters || [],
-      playerPosition: savedState.playerPosition || DEFAULT_POSITION,
-      gamePhase: savedState.gamePhase || 'start',
-    };
-  });
-
-  // 状態が変更されたらローカルストレージに保存
-  useEffect(() => {
+  // モンスター一覧を更新
+  const refreshMonsters = useCallback(async (): Promise<void> => {
     if (gameState.player) {
-      localStorage.setItem(STORAGE_KEYS.PLAYER, JSON.stringify(gameState.player));
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.PLAYER);
+      await monstersHook.fetchMonsters(gameState.player.id);
     }
+  }, [gameState.player, monstersHook]);
 
-    if (gameState.selectedMonster) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_MONSTER, JSON.stringify(gameState.selectedMonster));
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.SELECTED_MONSTER);
-    }
+  // モンスターのニックネーム更新
+  const updateMonsterNickname = useCallback(async (monsterId: string, nickname: string): Promise<boolean> => {
+    return await monstersHook.updateNickname(monsterId, nickname);
+  }, [monstersHook]);
 
-    if (gameState.ownedMonsters.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.OWNED_MONSTERS, JSON.stringify(gameState.ownedMonsters));
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.OWNED_MONSTERS);
-    }
+  // モンスターを逃がす
+  const releaseMonster = useCallback(async (monsterId: string): Promise<boolean> => {
+    return await monstersHook.releaseMonster(monsterId);
+  }, [monstersHook]);
 
-    localStorage.setItem(STORAGE_KEYS.PLAYER_POSITION, JSON.stringify(gameState.playerPosition));
-    localStorage.setItem(STORAGE_KEYS.GAME_PHASE, gameState.gamePhase);
-  }, [gameState]);
-
-  // プレイヤー情報を更新
-  const updatePlayer = useCallback((player: Player | null) => {
-    setGameState(prev => ({ ...prev, player }));
-  }, []);
-
-  // モンスターを選択
+  // モンスター選択
   const selectMonster = useCallback((monster: Monster | null) => {
-    setGameState(prev => ({ ...prev, selectedMonster: monster }));
-  }, []);
+    monstersHook.selectMonster(monster);
+  }, [monstersHook]);
 
-  // 所持モンスターを追加
-  const addOwnedMonster = useCallback((monster: Monster) => {
-    setGameState(prev => ({
-      ...prev,
-      ownedMonsters: [...prev.ownedMonsters, monster],
-    }));
-  }, []);
+  // ゲームフェーズ設定
+  const setGamePhase = useCallback((phase: GamePhase) => {
+    sessionHook.setGamePhase(phase);
+  }, [sessionHook]);
 
-  // 所持モンスターを削除
-  const removeOwnedMonster = useCallback((monsterId: string) => {
-    setGameState(prev => ({
-      ...prev,
-      ownedMonsters: prev.ownedMonsters.filter(m => m.id !== monsterId),
-    }));
-  }, []);
+  // プレイヤー移動
+  const movePlayer = useCallback((deltaX: number, deltaY: number) => {
+    sessionHook.movePlayer(deltaX, deltaY);
+  }, [sessionHook]);
 
-  // 所持モンスターを更新
-  const updateOwnedMonster = useCallback((monsterId: string, updates: Partial<Monster>) => {
-    setGameState(prev => ({
-      ...prev,
-      ownedMonsters: prev.ownedMonsters.map(m =>
-        m.id === monsterId ? { ...m, ...updates } : m
-      ),
-    }));
-  }, []);
+  // プレイヤー位置設定
+  const setPlayerPosition = useCallback((position: { x: number; y: number }) => {
+    sessionHook.setPlayerPosition(position);
+  }, [sessionHook]);
 
-  // プレイヤー位置を更新
-  const updatePlayerPosition = useCallback((x: number, y: number) => {
-    setGameState(prev => ({
-      ...prev,
-      playerPosition: { x, y },
-    }));
-  }, []);
-
-  // ゲームフェーズを更新
-  const updateGamePhase = useCallback((phase: GamePhase) => {
-    setGameState(prev => ({ ...prev, gamePhase: phase }));
-  }, []);
+  // バトル開始
+  const startBattle = useCallback(async (action: 'attack' | 'capture'): Promise<unknown> => {
+    if (!gameState.player) {
+      throw new Error('プレイヤーが選択されていません');
+    }
+    
+    // バトルフェーズに移行
+    setGamePhase('battle');
+    
+    try {
+      // バトル実行
+      const result = await monstersHook.battle(gameState.player.id, action);
+      
+      // バトル終了後にプレイフェーズに戻る
+      setGamePhase('playing');
+      
+      return result;
+    } catch (error) {
+      // エラー時もプレイフェーズに戻る
+      setGamePhase('playing');
+      throw error;
+    }
+  }, [gameState.player, monstersHook, setGamePhase]);
 
   // ゲーム状態をリセット
-  const resetGameState = useCallback(() => {
-    // ローカルストレージをクリア
-    Object.values(STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
+  const resetGame = useCallback(() => {
+    playerHook.reset();
+    monstersHook.reset();
+    sessionHook.resetSession();
+  }, [playerHook, monstersHook, sessionHook]);
 
-    // 状態を初期値に戻す
-    setGameState({
-      player: null,
-      selectedMonster: null,
-      ownedMonsters: [],
-      playerPosition: DEFAULT_POSITION,
-      gamePhase: 'start',
-    });
-  }, []);
+  // プレイヤーが選択されている場合、定期的にモンスター一覧を更新
+  useEffect(() => {
+    if (gameState.player && gameState.gamePhase === 'playing') {
+      // 初回取得
+      if (monstersHook.monsters.length === 0) {
+        monstersHook.fetchMonsters(gameState.player.id);
+      }
+    }
+  }, [gameState.player, gameState.gamePhase, monstersHook]);
 
   return {
     gameState,
-    updatePlayer,
+    loading,
+    error,
+    createPlayer,
+    selectPlayer,
+    logout,
+    refreshMonsters,
+    updateMonsterNickname,
+    releaseMonster,
     selectMonster,
-    addOwnedMonster,
-    removeOwnedMonster,
-    updateOwnedMonster,
-    updatePlayerPosition,
-    updateGamePhase,
-    resetGameState,
+    setGamePhase,
+    movePlayer,
+    setPlayerPosition,
+    startBattle,
+    resetGame,
   };
 };
+
+/**
+ * 初学者向けメモ：リファクタリングのポイント
+ * 
+ * 🔄 **Before（localStorage版）**
+ * - 全ての状態をlocalStorageで管理
+ * - オフラインで動作
+ * - データ同期なし
+ * - 単一デバイス限定
+ * 
+ * 🚀 **After（API連携版）**
+ * - プレイヤー・モンスターはD1データベース
+ * - 位置・フェーズはsessionStorage
+ * - リアルタイムデータ同期
+ * - 複数デバイス対応
+ * 
+ * 🏗️ **アーキテクチャの改善**
+ * - 関心の分離（プレイヤー、モンスター、セッション）
+ * - 再利用可能なカスタムフック
+ * - 型安全性の向上
+ * - テストしやすい構造
+ * 
+ * 📝 **使用例の変更**
+ * ```typescript
+ * // Before
+ * const { gameState, updatePlayer } = useGameState();
+ * updatePlayer(newPlayer);
+ * 
+ * // After
+ * const { gameState, createPlayer } = useGameState();
+ * await createPlayer('プレイヤー名'); // API呼び出し
+ * ```
+ * 
+ * 🎯 **学習効果**
+ * - RESTful API の活用
+ * - 非同期状態管理
+ * - データ永続化戦略の理解
+ * - フロントエンド・バックエンド連携
+ */
+
+// 後方互換性のためのエイリアス（将来削除予定）
+export { GamePhase };
