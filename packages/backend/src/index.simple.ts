@@ -11,7 +11,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
-import * as schema from './db/スキーマ';
+import * as schema from './db/schema';
 
 // 環境変数の型定義
 type Bindings = {

@@ -8,7 +8,7 @@
  */
 
 import { drizzle } from 'drizzle-orm/d1';
-import * as schema from './スキーマ';
+import * as schema from './schema';
 
 /**
  * データベース接続の型定義

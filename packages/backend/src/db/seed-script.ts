@@ -9,9 +9,9 @@
 
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import * as schema from './スキーマ';
+import * as schema from './schema';
 import { 初期データ投入, データリセット } from './seed';
-import type { データベース型 } from './型定義';
+import type { データベース型 } from './types';
 
 /**
  * メイン実行関数
