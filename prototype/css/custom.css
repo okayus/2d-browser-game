@@ -1,0 +1,271 @@
+/**
+ * カスタムCSS - プロトタイプ用
+ * 
+ * 初学者向けメモ：
+ * - Tailwind CDNで提供されない独自スタイル
+ * - アニメーション、特殊効果、ゲーム固有のスタイル
+ * - カスタムコンポーネントのスタイリング
+ */
+
+/* ========== 基本設定 ========== */
+:root {
+  /* カラーパレット（既存デザインに合わせて） */
+  --primary-blue: #2563eb;
+  --primary-green: #16a34a;
+  --primary-purple: #9333ea;
+  --accent-yellow: #eab308;
+  --neutral-gray: #6b7280;
+  
+  /* アニメーション設定 */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+  
+  /* ゲーム固有の設定 */
+  --map-tile-size: 48px;
+  --character-size: 40px;
+}
+
+/* ========== アニメーション ========== */
+
+/* タイトルのパルス効果 */
+@keyframes titlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.title-pulse {
+  animation: titlePulse 3s ease-in-out infinite;
+}
+
+/* フェードイン効果 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.fade-in-delay-1 {
+  animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.fade-in-delay-2 {
+  animation: fadeIn 0.6s ease-out 0.4s both;
+}
+
+/* ボタンのホバー効果 */
+.btn-hover-scale {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn-hover-scale:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* カードのホバー効果 */
+.card-hover {
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== ゲーム固有のスタイル ========== */
+
+/* プレイヤーキャラクター */
+.character {
+  width: var(--character-size);
+  height: var(--character-size);
+  border-radius: 50%;
+  background: linear-gradient(45deg, var(--primary-blue), var(--primary-purple));
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-fast);
+  position: relative;
+  z-index: 10;
+}
+
+.character::before {
+  content: '🧙‍♂️';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+}
+
+/* マップタイル */
+.map-tile {
+  width: var(--map-tile-size);
+  height: var(--map-tile-size);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: background-color var(--transition-fast);
+  position: relative;
+}
+
+/* タイルの種類 */
+.tile-grass {
+  background-color: #86efac;
+  background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.1) 50%, transparent 50%, transparent 75%, rgba(255,255,255,0.1) 75%);
+  background-size: 8px 8px;
+}
+
+.tile-town {
+  background-color: #fbbf24;
+  background-image: radial-gradient(circle at center, rgba(255,255,255,0.3) 30%, transparent 30%);
+}
+
+.tile-mountain {
+  background-color: #94a3b8;
+  background-image: linear-gradient(135deg, transparent 25%, rgba(0,0,0,0.1) 25%, rgba(0,0,0,0.1) 50%, transparent 50%);
+}
+
+.tile-water {
+  background-color: #60a5fa;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.3) 2px, transparent 2px),
+    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.2) 1px, transparent 1px);
+}
+
+/* 現在位置の強調表示 */
+.tile-current {
+  box-shadow: inset 0 0 0 3px var(--accent-yellow);
+  z-index: 5;
+}
+
+/* ========== フォーム要素のカスタマイズ ========== */
+
+/* 入力フィールドのフォーカス効果 */
+.input-focus:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  transform: scale(1.02);
+}
+
+/* 選択可能なカード */
+.selectable-card {
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: 2px solid transparent;
+}
+
+.selectable-card:hover {
+  border-color: var(--primary-blue);
+  transform: scale(1.05);
+}
+
+.selectable-card.selected {
+  border-color: var(--primary-blue);
+  background-color: rgba(37, 99, 235, 0.05);
+  transform: scale(1.02);
+}
+
+/* ========== ユーティリティクラス ========== */
+
+/* グラデーション背景 */
+.bg-gradient-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-game {
+  background: linear-gradient(45deg, #84fab0 0%, #8fd3f4 100%);
+}
+
+/* テキストのグラデーション */
+.text-gradient {
+  background: linear-gradient(45deg, var(--primary-blue), var(--primary-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 影の効果 */
+.shadow-game {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 禁止状態のスタイル */
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ========== レスポンシブ対応 ========== */
+
+/* モバイル固有のスタイル */
+@media (max-width: 768px) {
+  :root {
+    --map-tile-size: 40px;
+    --character-size: 32px;
+  }
+  
+  .mobile-padding {
+    padding: 1rem;
+  }
+  
+  .mobile-text-small {
+    font-size: 0.875rem;
+  }
+}
+
+/* タブレット以上 */
+@media (min-width: 768px) {
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+  }
+}
+
+/* ========== アクセシビリティ ========== */
+
+/* フォーカス可能な要素の表示改善 */
+.focusable:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* 動きを減らす設定に対応 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+  .map-tile {
+    border-width: 2px;
+    border-color: black;
+  }
+  
+  .character {
+    border-width: 3px;
+    border-color: black;
+  }
+}
+
+/* ========== デバッグ用スタイル ========== */
+
+/* 開発時のグリッド表示 */
+.debug-grid {
+  background-image: 
+    linear-gradient(rgba(255, 0, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 境界線の表示 */
+.debug-border * {
+  outline: 1px solid rgba(255, 0, 0, 0.3) !important;
+}

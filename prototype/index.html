@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モンスター収集ゲーム - スタート画面</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- カスタムCSS -->
+    <link rel="stylesheet" href="css/custom.css">
+    
+    <!-- メタ情報 -->
+    <meta name="description" content="プログラミング学習用モンスター収集ゲーム">
+    <meta name="keywords" content="ゲーム, プログラミング, 学習, TypeScript, React">
+    
+    <!-- ファビコン -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+</head>
+<body class="bg-gradient-hero min-h-screen">
+    <!-- メインコンテンツ -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            
+            <!-- ヒーローセクション -->
+            <div class="text-center mb-8 fade-in">
+                <div class="title-pulse">
+                    <h1 class="text-6xl mb-4">🎮</h1>
+                    <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 text-gradient">
+                        モンスター収集ゲーム
+                    </h1>
+                </div>
+                <p class="text-white/90 text-lg mb-2 fade-in-delay-1">
+                    プログラミング学習用プロジェクト
+                </p>
+                <p class="text-white/70 text-sm fade-in-delay-2">
+                    TypeScript + React + Hono + Cloudflare
+                </p>
+            </div>
+
+            <!-- プレイヤー作成フォーム -->
+            <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-game p-8 fade-in-delay-1">
+                <div id="form-messages">
+                    <!-- メッセージエリア（エラー・成功メッセージ表示用） -->
+                </div>
+
+                <form id="player-form" class="space-y-6">
+                    <!-- プレイヤー名入力 -->
+                    <div>
+                        <label for="player-name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            プレイヤー名を入力してください
+                        </label>
+                        <input 
+                            type="text" 
+                            id="player-name" 
+                            name="player-name"
+                            class="input-focus w-full px-4 py-3 border border-gray-300 rounded-lg text-lg transition-all duration-300"
+                            placeholder="例: 太郎"
+                            maxlength="20"
+                            autocomplete="off"
+                            required
+                            aria-describedby="name-help"
+                        >
+                        <div id="name-help" class="mt-2 text-sm text-gray-500">
+                            3文字以上20文字以下で入力してください
+                        </div>
+                        <div id="name-counter" class="mt-1 text-xs text-gray-400 text-right">
+                            0 / 20文字
+                        </div>
+                    </div>
+
+                    <!-- ゲーム説明 -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-blue-900 mb-2">このゲームについて</h3>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• モンスターを集めて育てるゲームです</li>
+                            <li>• マップを移動して新しいモンスターを発見</li>
+                            <li>• 学習目的で作られたプロトタイプです</li>
+                        </ul>
+                    </div>
+
+                    <!-- 開始ボタン -->
+                    <button 
+                        type="submit"
+                        id="start-game-btn"
+                        class="btn-hover-scale w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <span class="inline-flex items-center space-x-2">
+                            <span>🚀</span>
+                            <span>ゲーム開始</span>
+                        </span>
+                    </button>
+                </form>
+
+                <!-- 追加オプション -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="text-center space-y-3">
+                        <button 
+                            type="button"
+                            id="continue-game-btn"
+                            class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
+                            style="display: none;"
+                        >
+                            既存のゲームを続ける
+                        </button>
+                        
+                        <button 
+                            type="button"
+                            id="reset-game-btn"
+                            class="block w-full text-gray-500 hover:text-gray-700 text-sm transition-colors duration-300"
+                        >
+                            ゲームデータをリセット
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- フッター情報 -->
+            <div class="text-center mt-8 text-white/70 text-sm fade-in-delay-2">
+                <p>学習用プロジェクト | 初学者向けプログラミング教材</p>
+                <p class="mt-1">HTML + CSS + JavaScript プロトタイプ</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/common.js"></script>
+    <script>
+        /**
+         * スタート画面の初期化と処理
+         * 
+         * 初学者向けメモ：
+         * - フォームバリデーション
+         * - リアルタイム入力チェック
+         * - LocalStorageとの連携
+         * - アニメーション効果
+         */
+
+        // DOM要素の取得
+        let playerNameInput, startGameBtn, continueGameBtn, resetGameBtn, nameCounter, formMessages;
+        
+        // 初期化処理
+        onDOMReady(() => {
+            // DOM要素を取得
+            playerNameInput = document.getElementById('player-name');
+            startGameBtn = document.getElementById('start-game-btn');
+            continueGameBtn = document.getElementById('continue-game-btn');
+            resetGameBtn = document.getElementById('reset-game-btn');
+            nameCounter = document.getElementById('name-counter');
+            formMessages = document.getElementById('form-messages');
+            
+            // 既存のゲームデータをチェック
+            checkExistingGame();
+            
+            // イベントリスナーを設定
+            setupEventListeners();
+            
+            // プレイヤー名入力フィールドにフォーカス
+            if (playerNameInput) {
+                playerNameInput.focus();
+            }
+            
+            debugLog('Start Page Initialized', getGameState());
+        });
+
+        /**
+         * 既存のゲームデータをチェック
+         */
+        function checkExistingGame() {
+            const gameState = getGameState();
+            
+            if (gameState.playerName) {
+                // 既存のプレイヤー名を入力フィールドに設定
+                if (playerNameInput) {
+                    playerNameInput.value = gameState.playerName;
+                    validatePlayerNameInput();
+                }
+                
+                // 続行ボタンを表示
+                if (continueGameBtn) {
+                    continueGameBtn.style.display = 'block';
+                }
+                
+                // 既存ゲームの通知を表示
+                showSuccessMessage(
+                    formMessages,
+                    `既存のプレイヤー「${gameState.playerName}」が見つかりました`,
+                    3000
+                );
+            }
+        }
+
+        /**
+         * イベントリスナーの設定
+         */
+        function setupEventListeners() {
+            // プレイヤー名入力のリアルタイムバリデーション
+            if (playerNameInput) {
+                playerNameInput.addEventListener('input', handleNameInput);
+                playerNameInput.addEventListener('keydown', handleNameKeydown);
+            }
+            
+            // フォーム送信
+            const playerForm = document.getElementById('player-form');
+            if (playerForm) {
+                playerForm.addEventListener('submit', handleFormSubmit);
+            }
+            
+            // 続行ボタン
+            if (continueGameBtn) {
+                continueGameBtn.addEventListener('click', continueExistingGame);
+            }
+            
+            // リセットボタン
+            if (resetGameBtn) {
+                resetGameBtn.addEventListener('click', handleGameReset);
+            }
+        }
+
+        /**
+         * プレイヤー名入力の処理
+         */
+        function handleNameInput(event) {
+            const value = event.target.value;
+            
+            // 文字数カウンターを更新
+            updateCharacterCounter(value);
+            
+            // リアルタイムバリデーション
+            validatePlayerNameInput();
+        }
+
+        /**
+         * プレイヤー名入力のキーダウン処理
+         */
+        function handleNameKeydown(event) {
+            // Enterキーでフォーム送信
+            if (event.key === 'Enter' && !startGameBtn.disabled) {
+                event.preventDefault();
+                handleFormSubmit(event);
+            }
+        }
+
+        /**
+         * 文字数カウンターを更新
+         */
+        function updateCharacterCounter(value) {
+            if (nameCounter) {
+                const length = value.length;
+                nameCounter.textContent = `${length} / 20文字`;
+                
+                // 文字数に応じて色を変更
+                if (length > 20) {
+                    nameCounter.className = 'mt-1 text-xs text-red-500 text-right';
+                } else if (length >= 3) {
+                    nameCounter.className = 'mt-1 text-xs text-green-500 text-right';
+                } else {
+                    nameCounter.className = 'mt-1 text-xs text-gray-400 text-right';
+                }
+            }
+        }
+
+        /**
+         * プレイヤー名のバリデーション
+         */
+        function validatePlayerNameInput() {
+            if (!playerNameInput || !startGameBtn) return;
+            
+            const value = playerNameInput.value;
+            const validation = validatePlayerName(value);
+            
+            // ボタンの有効/無効を切り替え
+            startGameBtn.disabled = !validation.isValid;
+            
+            // エラーメッセージをクリア（入力中は表示しない）
+            const existingError = formMessages.querySelector('.error-message');
+            if (existingError && value.length > 0) {
+                existingError.remove();
+            }
+            
+            return validation;
+        }
+
+        /**
+         * フォーム送信処理
+         */
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const validation = validatePlayerNameInput();
+            
+            if (!validation.isValid) {
+                showErrorMessage(formMessages, validation.message);
+                playerNameInput.focus();
+                return;
+            }
+            
+            // プレイヤー名を保存
+            const success = updateGameState({ 
+                playerName: validation.name,
+                gameState: 'player_creation'
+            });
+            
+            if (!success) {
+                showErrorMessage(formMessages, 'データの保存に失敗しました。もう一度お試しください。');
+                return;
+            }
+            
+            // ボタンを一時的に無効化
+            temporaryDisableButton(startGameBtn, 1500);
+            startGameBtn.textContent = '準備中...';
+            
+            // 成功メッセージを表示
+            showSuccessMessage(formMessages, 'プレイヤーを作成中...', 1500);
+            
+            // プレイヤー作成画面に遷移
+            setTimeout(() => {
+                navigateToPage('player-creation');
+            }, 1500);
+        }
+
+        /**
+         * 既存ゲームの続行処理
+         */
+        function continueExistingGame() {
+            const gameState = getGameState();
+            
+            if (!gameState.playerName) {
+                showErrorMessage(formMessages, '継続するゲームデータが見つかりません。');
+                return;
+            }
+            
+            // ゲーム状態に応じて適切な画面に遷移
+            if (gameState.selectedMonster && gameState.gameState === 'playing') {
+                // マップ画面に遷移
+                showSuccessMessage(formMessages, 'ゲームを再開します...', 1000);
+                setTimeout(() => {
+                    navigateToPage('map');
+                }, 1000);
+            } else {
+                // プレイヤー作成画面に遷移
+                showSuccessMessage(formMessages, 'プレイヤー作成画面に移動します...', 1000);
+                setTimeout(() => {
+                    navigateToPage('player-creation');
+                }, 1000);
+            }
+        }
+
+        /**
+         * ゲームリセット処理
+         */
+        function handleGameReset() {
+            if (confirm('すべてのゲームデータがリセットされます。本当によろしいですか？')) {
+                // ゲームデータをリセット
+                resetGameState();
+                
+                // フォームをリセット
+                if (playerNameInput) {
+                    playerNameInput.value = '';
+                    updateCharacterCounter('');
+                    validatePlayerNameInput();
+                }
+                
+                // 続行ボタンを非表示
+                if (continueGameBtn) {
+                    continueGameBtn.style.display = 'none';
+                }
+                
+                // 成功メッセージを表示
+                showSuccessMessage(formMessages, 'ゲームデータをリセットしました。', 3000);
+                
+                // プレイヤー名入力にフォーカス
+                if (playerNameInput) {
+                    playerNameInput.focus();
+                }
+                
+                debugLog('Game Reset', 'All data cleared');
+            }
+        }
+    </script>
+</body>
+</html>
