@@ -9,9 +9,9 @@
 
 import { drizzle } from 'drizzle-orm/d1';
 import { migrate } from 'drizzle-orm/d1/migrator';
-import * as schema from './スキーマ';
-import type { データベース型, D1データベース型 } from './型定義';
-import { ロガー } from '../utils/ロガー';
+import * as schema from './schema';
+import type { データベース型, D1データベース型 } from './types';
+import { ロガー } from '../utils/logger';
 
 /**
  * データベース接続とマイグレーション実行

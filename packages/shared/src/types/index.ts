@@ -4,11 +4,11 @@
  */
 
 // プレイヤー関連の型
-export * from './プレイヤー.js';
+export * from './player.js';
 // モンスター関連の型
-export * from './モンスター.js';
+export * from './monster.js';
 // バトル関連の型
-export * from './バトル.js';
+export * from './battle.js';
 // API関連の型
 export * from './api.js';
-export * from './API応答.js';
+export * from './api-response.js';

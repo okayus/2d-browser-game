@@ -8,12 +8,12 @@
  */
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { レイアウト } from './components/レイアウト';
-import { ホーム } from './pages/ホーム';
-import { プレイヤー作成 } from './pages/プレイヤー作成';
-import { プレイヤー詳細 } from './pages/プレイヤー詳細';
-import { モンスター一覧 } from './pages/モンスター一覧';
-import { エラーページ } from './pages/エラーページ';
+import { レイアウト } from './components/Layout';
+import { ホーム } from './pages/Home';
+import { プレイヤー作成 } from './pages/PlayerCreate';
+import { プレイヤー詳細 } from './pages/PlayerDetail';
+import { モンスター一覧 } from './pages/MonsterList';
+import { エラーページ } from './pages/ErrorPage';
 import { NotFound } from './pages/NotFound';
 
 /**

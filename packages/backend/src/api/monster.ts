@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, and, desc } from 'drizzle-orm';
-import * as schema from '../db/スキーマ';
+import * as schema from '../db/schema';
 import { uuid生成 } from '@monster-game/shared';
 
 // HTTPレスポンス型定義（一時的な実装）
@@ -26,8 +26,8 @@ interface HTTPレスポンス型<T = unknown> {
     readonly メッセージ: string;
   };
 }
-import { ロガー } from '../utils/ロガー';
-import type { データベース型 } from '../db/型定義';
+import { ロガー } from '../utils/logger';
+import type { データベース型 } from '../db/types';
 
 // APIの型定義
 type Env = {

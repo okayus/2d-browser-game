@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { uuid生成, ランダムid生成 } from '../../utils/id生成';
+import { uuid生成, ランダムid生成 } from '../../utils/id-generator';
 
 describe('ID生成ユーティリティ単体テスト', () => {
   /**

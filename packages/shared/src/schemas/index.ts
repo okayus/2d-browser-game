@@ -4,8 +4,8 @@
  */
 
 // プレイヤー関連のスキーマ
-export * from './プレイヤースキーマ.js';
+export * from './player-schema.js';
 // モンスター関連のスキーマ
-export * from './モンスタースキーマ.js';
+export * from './monster-schema.js';
 // バトル関連のスキーマ
-export * from './バトルスキーマ.js';
+export * from './battle-schema.js';

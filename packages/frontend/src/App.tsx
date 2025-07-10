@@ -7,7 +7,7 @@
  * - 全体のアプリケーション構造を定義
  */
 
-import { Router } from './ルーター';
+import { Router } from './Router';
 
 /**
  * アプリケーションのメインコンポーネント
