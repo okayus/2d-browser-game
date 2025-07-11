@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GameMap, PlayerPanel } from '../components/game'
 import { Button, Card, CardContent } from '../components/ui'
-import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES, getStorageData } from '../lib/utils'
+import { updateGameState, MAP_CONFIG, MONSTER_TYPES } from '../lib/utils'
 import { usePlayer } from '../hooks/usePlayer'
 import { useMonsters } from '../hooks/useMonsters'
 
@@ -38,7 +38,7 @@ export function MapPage() {
   const navigate = useNavigate()
   
   // API統合フック
-  const { player, getPlayer, isLoading: playerLoading, error: playerError } = usePlayer()
+  const { player, isLoading: playerLoading, error: playerError } = usePlayer()
   const { monsters, loadMonsters, isLoading: monstersLoading, error: monstersError } = useMonsters()
   
   // 状態管理
@@ -52,52 +52,25 @@ export function MapPage() {
    * API経由でプレイヤー・モンスター情報を取得
    */
   useEffect(() => {
-    const initializeGame = async () => {
-      const gameState = getGameState()
-      const storedPlayerId = getStorageData<string>('player_id')
+    if (!player && !playerLoading) {
+      // プレイヤー情報がない場合はスタート画面に戻る
+      navigate('/')
+      return
+    }
+    
+    if (player) {
+      // プレイヤーのモンスター一覧を取得
+      loadMonsters(player.id)
       
-      // プレイヤーIDがある場合はAPI経由で取得、ない場合はローカルストレージを確認
-      if (storedPlayerId) {
-        try {
-          const playerData = await getPlayer(storedPlayerId)
-          if (playerData) {
-            // プレイヤーのモンスター一覧を取得
-            await loadMonsters(playerData.id)
-            
-            // 保存されている位置があれば復元
-            if (gameState.playerPosition) {
-              setPlayerPosition(gameState.playerPosition)
-            }
-            
-            addMessage('冒険を開始しました！矢印キーまたはWASDで移動できます。', 'info')
-            return
-          }
-        } catch (error) {
-          console.warn('API経由のプレイヤー取得に失敗、フォールバックします:', error)
-        }
-      }
-      
-      // フォールバック: ローカルストレージからの取得
-      if (!gameState.playerName) {
-        navigate('/')
-        return
-      }
-      
-      if (!gameState.selectedMonster) {
+      // モンスターを持っていない場合はプレイヤー作成画面に戻る
+      if (!player.monsters || player.monsters.length === 0) {
         navigate('/player-creation')
         return
       }
       
-      // 保存されている位置があれば復元
-      if (gameState.playerPosition) {
-        setPlayerPosition(gameState.playerPosition)
-      }
-      
       addMessage('冒険を開始しました！矢印キーまたはWASDで移動できます。', 'info')
     }
-    
-    initializeGame()
-  }, [navigate, getPlayer, loadMonsters])
+  }, [player, playerLoading, navigate, loadMonsters])
 
   /**
    * メッセージを追加
@@ -371,7 +344,7 @@ export function MapPage() {
             <div data-testid="player-panel">
               <PlayerPanel
                 player={{
-                  name: player?.name || getGameState().playerName || '',
+                  name: player?.name || 'プレイヤー',
                   selectedMonster: monsters.length > 0 && monsters[0].species ? {
                     id: monsters[0].speciesId,
                     name: monsters[0].species.name,
@@ -379,7 +352,7 @@ export function MapPage() {
                     imageUrl: monsters[0].species.imageUrl || '/images/monsters/default.png',
                     description: monsters[0].species.description,
                     baseStats: monsters[0].species.baseStats || { hp: 100, attack: 20, defense: 15 }
-                  } : getGameState().selectedMonster || undefined,
+                  } : undefined,
                   position: playerPosition
                 }}
               />
