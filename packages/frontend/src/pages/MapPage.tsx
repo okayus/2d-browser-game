@@ -199,6 +199,7 @@ export function MapPage() {
                 variant="secondary"
                 size="sm"
                 onClick={handleBackToCreation}
+                data-testid="back-to-creation-button"
               >
                 ← プレイヤー作成
               </Button>
@@ -206,6 +207,7 @@ export function MapPage() {
                 variant="danger"
                 size="sm"
                 onClick={handleRestartGame}
+                data-testid="restart-game-button"
               >
                 🔄 最初から
               </Button>
@@ -221,7 +223,7 @@ export function MapPage() {
           <div className="lg:col-span-3 space-y-4">
             
             {/* マップコンテナ */}
-            <Card>
+            <Card data-testid="game-map-container">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-900">🗺️ ワールドマップ</h2>
@@ -241,7 +243,7 @@ export function MapPage() {
             </Card>
 
             {/* メッセージエリア */}
-            <Card>
+            <Card data-testid="message-area">
               <CardContent className="p-4">
                 <h3 className="font-bold text-gray-900 mb-3">📝 メッセージ</h3>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -254,6 +256,7 @@ export function MapPage() {
                         message.type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
                         'bg-red-50 border-red-200 text-red-700'
                       }`}
+                      data-testid={`message-${message.type}`}
                     >
                       {message.text}
                     </div>
@@ -264,7 +267,7 @@ export function MapPage() {
 
             {/* タイル情報エリア */}
             {selectedTileInfo && (
-              <Card>
+              <Card data-testid="tile-info">
                 <CardContent className="p-4">
                   <h3 className="font-bold text-gray-900 mb-3">🔍 地形情報</h3>
                   <div className="flex items-center space-x-3">
@@ -285,13 +288,15 @@ export function MapPage() {
           <div className="lg:col-span-1 space-y-4">
             
             {/* プレイヤー情報パネル */}
-            <PlayerPanel
-              player={{
-                name: playerInfo.name,
-                selectedMonster: playerInfo.selectedMonster,
-                position: playerPosition
-              }}
-            />
+            <div data-testid="player-panel">
+              <PlayerPanel
+                player={{
+                  name: playerInfo.name,
+                  selectedMonster: playerInfo.selectedMonster,
+                  position: playerPosition
+                }}
+              />
+            </div>
 
             {/* マップ凡例 */}
             <Card>
@@ -345,6 +350,7 @@ export function MapPage() {
                       size="sm"
                       onClick={handleOpenMonsterList}
                       className="w-full"
+                      data-testid="open-monster-list-button"
                     >
                       🎒 モンスター一覧
                     </Button>
@@ -353,6 +359,7 @@ export function MapPage() {
                       size="sm"
                       onClick={() => addMessage(`現在位置: (${playerPosition.x}, ${playerPosition.y})`, 'info')}
                       className="w-full"
+                      data-testid="check-position-button"
                     >
                       📍 現在地を確認
                     </Button>

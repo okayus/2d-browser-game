@@ -179,6 +179,7 @@ export function MonsterListPage() {
               variant="secondary"
               size="sm"
               onClick={handleBackToMap}
+              data-testid="back-to-map-button"
             >
               ← マップに戻る
             </Button>
@@ -191,7 +192,7 @@ export function MonsterListPage() {
         
         {/* エラーメッセージ */}
         {error && (
-          <div className="mb-6 message-error animate-slide-up">
+          <div className="mb-6 message-error animate-slide-up" data-testid="error-message">
             {error}
           </div>
         )}
@@ -208,6 +209,7 @@ export function MonsterListPage() {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="border border-gray-300 rounded px-3 py-1 text-sm"
+                  data-testid="sort-select"
                 >
                   <option value="capturedAt">獲得日時順</option>
                   <option value="name">名前順</option>
@@ -222,6 +224,7 @@ export function MonsterListPage() {
                   value={filterSpecies}
                   onChange={(e) => setFilterSpecies(e.target.value)}
                   className="border border-gray-300 rounded px-3 py-1 text-sm"
+                  data-testid="filter-select"
                 >
                   <option value="all">すべて</option>
                   {MONSTER_TYPES.map(species => (
@@ -233,7 +236,7 @@ export function MonsterListPage() {
               </div>
 
               {/* 統計情報 */}
-              <div className="ml-auto text-sm text-gray-600">
+              <div className="ml-auto text-sm text-gray-600" data-testid="monster-count">
                 {filteredMonsters.length} / {monsters.length} 体表示中
               </div>
             </div>
@@ -242,7 +245,7 @@ export function MonsterListPage() {
 
         {/* モンスター一覧 */}
         {filteredMonsters.length === 0 ? (
-          <Card>
+          <Card data-testid="empty-state">
             <CardContent className="p-12 text-center text-gray-500">
               <div className="text-6xl mb-4">🎒</div>
               <h3 className="text-lg font-semibold mb-2">モンスターがいません</h3>
@@ -256,7 +259,7 @@ export function MonsterListPage() {
               const isEditing = editingMonster === monster.id
               
               return (
-                <Card key={monster.id} className="monster-card">
+                <Card key={monster.id} className="monster-card" data-testid={`monster-card-${monster.id}`}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -276,12 +279,14 @@ export function MonsterListPage() {
                                   cancelEditNickname()
                                 }
                               }}
+                              data-testid="edit-nickname-input"
                             />
                           ) : (
                             <h3
                               className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-blue-600"
                               onClick={() => startEditNickname(monster)}
                               title="クリックで編集"
+                              data-testid={`monster-name-${monster.id}`}
                             >
                               {displayName}
                             </h3>
@@ -344,6 +349,7 @@ export function MonsterListPage() {
                           onClick={() => saveNickname(monster.id)}
                           disabled={isLoading}
                           className="flex-1"
+                          data-testid={`save-button-${monster.id}`}
                         >
                           保存
                         </Button>
@@ -353,6 +359,7 @@ export function MonsterListPage() {
                           onClick={cancelEditNickname}
                           disabled={isLoading}
                           className="flex-1"
+                          data-testid={`cancel-button-${monster.id}`}
                         >
                           キャンセル
                         </Button>
@@ -365,6 +372,7 @@ export function MonsterListPage() {
                           onClick={() => startEditNickname(monster)}
                           disabled={isLoading}
                           className="flex-1"
+                          data-testid={`edit-button-${monster.id}`}
                         >
                           ✏️ 編集
                         </Button>
@@ -374,6 +382,7 @@ export function MonsterListPage() {
                           onClick={() => handleReleaseMonster(monster)}
                           disabled={isLoading}
                           className="flex-1"
+                          data-testid={`release-button-${monster.id}`}
                         >
                           🕊️ 逃がす
                         </Button>

@@ -120,6 +120,7 @@ export function PlayerCreationPage() {
             <button
               onClick={handleBackToStart}
               className="px-4 py-2 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded transition-colors"
+              data-testid="back-to-start-button"
             >
               ← スタートに戻る
             </button>
@@ -153,7 +154,7 @@ export function PlayerCreationPage() {
 
           {/* エラーメッセージ */}
           {error && (
-            <div className="message-error animate-slide-up">
+            <div className="message-error animate-slide-up" data-testid="error-message">
               {error}
             </div>
           )}
@@ -176,6 +177,7 @@ export function PlayerCreationPage() {
                       ? 'border-blue-500 bg-blue-50' 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
+                  data-testid={`monster-option-${monster.id}`}
                 >
                   <div className="text-center">
                     {/* モンスターアイコン */}
@@ -214,7 +216,7 @@ export function PlayerCreationPage() {
           <div className="grid grid-cols-2 gap-6">
             
             {/* 選択されたパートナー */}
-            <div className="bg-white/90 rounded-lg p-6">
+            <div className="bg-white/90 rounded-lg p-6" data-testid="selected-partner-panel">
               {selectedMonster ? (
                 <>
                   <h3 className="text-lg font-bold text-gray-900 mb-4">選択されたパートナー</h3>
@@ -290,6 +292,7 @@ export function PlayerCreationPage() {
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
+                data-testid="start-adventure-button"
               >
                 <span className="inline-flex items-center space-x-2">
                   <span>🗺️</span>

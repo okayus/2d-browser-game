@@ -315,6 +315,7 @@ export function GameMap({
       {/* マップグリッド */}
       <div
         data-game-map
+        data-testid="game-map"
         className="grid gap-0.5 bg-gray-300 p-2 rounded-lg mx-auto overflow-x-auto select-none"
         style={{
           gridTemplateColumns: `repeat(${width}, 1fr)`,
@@ -354,6 +355,7 @@ export function GameMap({
                 role="button"
                 aria-label={`${tile.name}、座標${x}, ${y}${isPlayerHere ? '、現在位置' : ''}`}
                 tabIndex={-1}
+                data-testid={`map-tile-${x}-${y}`}
               >
                 {/* タイルアイコン */}
                 <div className="absolute inset-0 flex items-center justify-center text-xs opacity-50">
@@ -362,7 +364,7 @@ export function GameMap({
                 
                 {/* プレイヤーキャラクター */}
                 {isPlayerHere && (
-                  <div className="character absolute inset-0.5 flex items-center justify-center text-lg">
+                  <div className="character absolute inset-0.5 flex items-center justify-center text-lg" data-testid="player-character">
                     🧙‍♂️
                   </div>
                 )}

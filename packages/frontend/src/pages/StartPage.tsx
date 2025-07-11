@@ -166,18 +166,18 @@ export function StartPage() {
           
           {/* メッセージエリア */}
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 animate-slide-up">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 animate-slide-up" data-testid="validation-error">
               {error}
             </div>
           )}
           
           {success && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4 animate-slide-up">
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4 animate-slide-up" data-testid="success-message">
               {success}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" data-testid="player-form">
             
             {/* プレイヤー名入力 */}
             <div>
@@ -195,6 +195,7 @@ export function StartPage() {
                 autoComplete="off"
                 required
                 aria-describedby="name-help"
+                data-testid="player-name-input"
               />
               <div id="name-help" className="mt-2 text-sm text-gray-500">
                 3文字以上20文字以下で入力してください
@@ -219,6 +220,7 @@ export function StartPage() {
               type="submit"
               className="w-full py-4 px-6 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
               disabled={isSubmitDisabled}
+              data-testid="start-game-button"
             >
               <span className="inline-flex items-center space-x-2">
                 <span>🚀</span>
@@ -235,6 +237,7 @@ export function StartPage() {
                   type="button"
                   onClick={handleContinueGame}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
+                  data-testid="continue-game-button"
                 >
                   既存のゲームを続ける
                 </button>
@@ -244,6 +247,7 @@ export function StartPage() {
                 type="button"
                 onClick={handleResetGame}
                 className="block w-full text-gray-500 hover:text-gray-700 text-sm transition-colors duration-300"
+                data-testid="reset-game-button"
               >
                 ゲームデータをリセット
               </button>
