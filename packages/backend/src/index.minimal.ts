@@ -9,6 +9,7 @@ import { cors } from 'hono/cors';
 // Cloudflare Workers の環境変数型定義
 type Bindings = {
   DB: D1Database; // D1データベース
+  ENVIRONMENT?: string; // 環境識別子（development/production等）
 }
 
 // Honoアプリケーションの作成
