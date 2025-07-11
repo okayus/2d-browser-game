@@ -1,11 +1,11 @@
 /**
  * プレイヤー管理用のカスタムフック
  * プレイヤーの作成・取得・状態管理を行う
+ * 完全API統合版 - LocalStorage依存を排除
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { playerAPI, APIError } from '../api'
 import type { PlayerCreationResponse, PlayerResponse } from '../types/api'
-import { setStorageData } from '../lib/utils'
 
 /**
  * プレイヤー情報の型定義
@@ -39,18 +39,64 @@ interface UsePlayerReturn {
   createPlayer: (name: string) => Promise<PlayerData | null>
   /** プレイヤー情報取得関数 */
   getPlayer: (id: string) => Promise<PlayerData | null>
+  /** 現在のプレイヤーIDをSessionStorageから取得 */
+  getCurrentPlayerId: () => string | null
+  /** プレイヤーIDをSessionStorageに保存 */
+  setCurrentPlayerId: (id: string) => void
+  /** プレイヤーセッションをクリア */
+  clearSession: () => void
   /** エラーをクリア */
   clearError: () => void
 }
 
 /**
+ * SessionStorage管理のヘルパー関数
+ */
+const CURRENT_PLAYER_KEY = 'current_player_id'
+
+/**
  * プレイヤー管理用のカスタムフック
- * プロトタイプのLocalStorage管理とAPIクライアントを統合
+ * 完全API統合版 - SessionStorageでプレイヤーIDのみ管理
  */
 export function usePlayer(): UsePlayerReturn {
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /**
+   * 現在のプレイヤーIDをSessionStorageから取得
+   */
+  const getCurrentPlayerId = useCallback((): string | null => {
+    try {
+      return sessionStorage.getItem(CURRENT_PLAYER_KEY)
+    } catch {
+      return null
+    }
+  }, [])
+
+  /**
+   * プレイヤーIDをSessionStorageに保存
+   */
+  const setCurrentPlayerId = useCallback((id: string): void => {
+    try {
+      sessionStorage.setItem(CURRENT_PLAYER_KEY, id)
+    } catch (error) {
+      console.warn('SessionStorageへの保存に失敗:', error)
+    }
+  }, [])
+
+  /**
+   * プレイヤーセッションをクリア
+   */
+  const clearSession = useCallback((): void => {
+    try {
+      sessionStorage.removeItem(CURRENT_PLAYER_KEY)
+    } catch (error) {
+      console.warn('SessionStorageのクリアに失敗:', error)
+    }
+    setPlayer(null)
+    setError(null)
+  }, [])
 
   /**
    * エラーをクリア
@@ -80,9 +126,8 @@ export function usePlayer(): UsePlayerReturn {
           initialMonsterId: response.data.initialMonsterId || undefined
         }
         
-        // ローカルストレージに保存
-        setStorageData('player_id', playerData.id)
-        setStorageData('player_name', playerData.name)
+        // SessionStorageにプレイヤーIDのみ保存
+        setCurrentPlayerId(playerData.id)
         
         setPlayer(playerData)
         return playerData
@@ -155,12 +200,26 @@ export function usePlayer(): UsePlayerReturn {
     }
   }, [])
 
+  /**
+   * 初期化時の自動ログイン処理
+   * SessionStorageにプレイヤーIDがあれば自動で読み込み
+   */
+  useEffect(() => {
+    const playerId = getCurrentPlayerId()
+    if (playerId && !player && !isLoading) {
+      getPlayer(playerId)
+    }
+  }, [getCurrentPlayerId, getPlayer, player, isLoading])
+
   return {
     player,
     isLoading,
     error,
     createPlayer,
     getPlayer,
+    getCurrentPlayerId,
+    setCurrentPlayerId,
+    clearSession,
     clearError
   }
 }

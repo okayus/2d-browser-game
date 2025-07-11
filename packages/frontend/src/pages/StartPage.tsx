@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { validatePlayerName, getStorageData, setStorageData } from '../lib/utils'
+import { validatePlayerName } from '../lib/utils'
 import { usePlayer } from '../hooks'
 
 /**
@@ -16,7 +16,15 @@ export function StartPage() {
   const navigate = useNavigate()
   
   // プレイヤー管理フック
-  const { isLoading: playerLoading, error: playerError, createPlayer, getPlayer, clearError } = usePlayer()
+  const { 
+    player, 
+    isLoading: playerLoading, 
+    error: playerError, 
+    createPlayer, 
+    getCurrentPlayerId,
+    clearSession,
+    clearError 
+  } = usePlayer()
   
   // コンポーネントの状態管理
   const [playerName, setPlayerName] = useState('')
@@ -29,26 +37,23 @@ export function StartPage() {
 
   /**
    * コンポーネント初期化時の処理
-   * 既存のゲームデータをチェック
+   * 既存のプレイヤーをチェック
    */
   useEffect(() => {
-    const existingPlayerName = getStorageData('player_name')
-    const existingPlayerId = getStorageData('player_id')
-    
-    if (existingPlayerName && typeof existingPlayerName === 'string') {
-      setPlayerName(existingPlayerName)
+    // usePlayerフックが自動的にSessionStorageからロードするため、
+    // player情報が取得できた場合は既存ゲーム扱い
+    if (player) {
+      setPlayerName(player.name)
       setHasExistingGame(true)
-      setSuccess(`既存のプレイヤー「${existingPlayerName}」が見つかりました`)
-      
-      // バックエンドからプレイヤー情報を取得（オプション）
-      if (existingPlayerId && typeof existingPlayerId === 'string') {
-        getPlayer(existingPlayerId).catch(() => {
-          // エラーが発生しても続行（オフライン対応）
-          console.warn('プレイヤー情報の取得に失敗しましたが、続行します')
-        })
+      setSuccess(`既存のプレイヤー「${player.name}」でログイン中です`)
+    } else {
+      // プレイヤーIDがあるがロードに失敗した場合の処理
+      const playerId = getCurrentPlayerId()
+      if (playerId) {
+        setHasExistingGame(true)
       }
     }
-  }, [getPlayer])
+  }, [player, getCurrentPlayerId])
 
   /**
    * プレイヤー名のリアルタイムバリデーション
@@ -85,9 +90,7 @@ export function StartPage() {
       const createdPlayer = await createPlayer(validation.name!)
       
       if (createdPlayer) {
-        // ローカルストレージにも保存（プロトタイプ互換性のため）
-        setStorageData('player_name', createdPlayer.name)
-        setStorageData('game_state', 'player_creation')
+        setSuccess(`プレイヤー「${createdPlayer.name}」を作成しました！`)
         
         // 少し遅延してからプレイヤー作成画面に遷移
         setTimeout(() => {
@@ -105,11 +108,8 @@ export function StartPage() {
    * 既存ゲームの続行処理
    */
   const handleContinueGame = () => {
-    const gameState = getStorageData<string>('game_state', 'start')
-    const selectedMonster = getStorageData('selected_monster')
-    
-    if (selectedMonster && gameState === 'playing') {
-      // マップ画面に遷移
+    if (player && player.monsters && player.monsters.length > 0) {
+      // モンスターを持っている場合はマップ画面に遷移
       setSuccess('ゲームを再開します...')
       setTimeout(() => navigate('/map'), 1000)
     } else {
@@ -123,15 +123,14 @@ export function StartPage() {
    * ゲームリセット処理
    */
   const handleResetGame = () => {
-    if (confirm('すべてのゲームデータがリセットされます。本当によろしいですか？')) {
-      // LocalStorageをクリア
-      localStorage.clear()
+    if (confirm('プレイヤーセッションがリセットされます。本当によろしいですか？')) {
+      // プレイヤーセッションをクリア
+      clearSession()
       
       // 状態をリセット
       setPlayerName('')
       setHasExistingGame(false)
-      clearError()
-      setSuccess('ゲームデータをリセットしました。')
+      setSuccess('プレイヤーセッションをリセットしました。')
     }
   }
 
