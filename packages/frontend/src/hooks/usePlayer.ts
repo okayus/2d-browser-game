@@ -15,6 +15,14 @@ interface PlayerData {
   name: string
   createdAt: string
   initialMonsterId?: string
+  monsters?: Array<{
+    id: string
+    speciesId: string
+    nickname: string
+    currentHp: number
+    maxHp: number
+    capturedAt: string
+  }>
 }
 
 /**
