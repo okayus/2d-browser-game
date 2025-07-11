@@ -9,6 +9,8 @@ import { BattleLog } from './BattleLog'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import type { Monster } from '../../types'
+import { monsterAPI } from '../../api'
+import { usePlayer } from '../../hooks/usePlayer'
 
 /**
  * バトル画面のプロパティ
@@ -51,6 +53,9 @@ const WILD_FLAME_BEAST: Monster = {
  * バトルロジックとUI統合
  */
 export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) {
+  // プレイヤー情報（API統合用）
+  const { player } = usePlayer()
+  
   // バトル状態
   const [wildMonster, setWildMonster] = useState<Monster>({
     ...WILD_FLAME_BEAST,
@@ -133,6 +138,16 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
     if (newWildHp === 0) {
       addLog('フレイムビーストを倒した！', 'victory')
       setBattleStatus('won')
+      
+      // バトル終了時にプレイヤーモンスターのHP更新
+      try {
+        await monsterAPI.updateHp(playerMon.id, playerMon.hp)
+        addLog('モンスターの状態を保存しました', 'info')
+      } catch (error) {
+        console.error('HP更新エラー:', error)
+        addLog('状態保存に失敗しました', 'info')
+      }
+      
       setIsProcessing(false)
       return
     }
@@ -154,6 +169,16 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
     if (newPlayerHp === 0) {
       addLog(`${playerMon.name}は倒れてしまった...`, 'defeat')
       setBattleStatus('lost')
+      
+      // バトル終了時にプレイヤーモンスターのHP更新
+      try {
+        await monsterAPI.updateHp(playerMon.id, 0)
+        addLog('モンスターの状態を保存しました', 'info')
+      } catch (error) {
+        console.error('HP更新エラー:', error)
+        addLog('状態保存に失敗しました', 'info')
+      }
+      
       setIsProcessing(false)
       return
     }
@@ -187,7 +212,30 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
     if (Math.random() < captureRate) {
       addLog('やった！フレイムビーストを捕まえた！', 'capture')
       setBattleStatus('won')
-      // TODO: バックエンドAPIでモンスター追加
+      
+      // バックエンドAPIでモンスター捕獲
+      try {
+        if (player) {
+          await monsterAPI.capture(
+            player.id,
+            'flame-beast', // フレイムビーストの種族ID
+            'フレイムビースト', // ニックネーム
+            wildMonster.hp, // 現在HP
+            wildMonster.maxHp // 最大HP
+          )
+          addLog('捕獲したモンスターを登録しました！', 'capture')
+        }
+      } catch (error) {
+        console.error('モンスター捕獲エラー:', error)
+        addLog('捕獲の登録に失敗しました', 'info')
+      }
+      
+      // プレイヤーモンスターのHP更新も実行
+      try {
+        await monsterAPI.updateHp(playerMon.id, playerMon.hp)
+      } catch (error) {
+        console.error('HP更新エラー:', error)
+      }
     } else {
       addLog('だめだ！捕まらなかった！', 'info')
       // 次のターン順をHPベースで決定
@@ -222,6 +270,13 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
     if (newPlayerHp === 0) {
       addLog(`${playerMon.name}は倒れてしまった...`, 'defeat')
       setBattleStatus('lost')
+      
+      // プレイヤー敗北時もHP更新
+      try {
+        await monsterAPI.updateHp(playerMon.id, 0)
+      } catch (error) {
+        console.error('HP更新エラー:', error)
+      }
     } else {
       // 次のターン順をHPベースで決定
       const nextTurn = determineTurnOrder()
@@ -237,11 +292,23 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
   /**
    * 逃走処理
    */
-  const handleRun = () => {
+  const handleRun = async () => {
     if (isProcessing || battleStatus !== 'active') return
 
+    setIsProcessing(true)
     addLog('うまく逃げ切れた！', 'info')
     setBattleStatus('fled')
+    
+    // 逃走時もプレイヤーモンスターのHP更新
+    try {
+      await monsterAPI.updateHp(playerMon.id, playerMon.hp)
+      addLog('モンスターの状態を保存しました', 'info')
+    } catch (error) {
+      console.error('HP更新エラー:', error)
+      addLog('状態保存に失敗しました', 'info')
+    }
+    
+    setIsProcessing(false)
   }
 
   /**

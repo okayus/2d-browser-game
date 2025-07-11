@@ -187,6 +187,73 @@ export const monsterAPI = {
   },
 
   /**
+   * モンスターのHP更新
+   * 
+   * 初学者向けメモ：
+   * - バトル後のHP更新用
+   * - 最大HP以下の値のみ許可
+   * 
+   * @param monsterId モンスターID
+   * @param currentHp 現在のHP
+   * @returns 更新結果
+   */
+  async updateHp(monsterId: string, currentHp: number): Promise<API応答<{ id: string; 現在hp: number; 最大hp: number }>> {
+    return fetchAPI<API応答<{ id: string; 現在hp: number; 最大hp: number }>>(`/monsters/${monsterId}/hp`, {
+      method: 'PUT',
+      body: JSON.stringify({ 現在hp: currentHp }),
+    });
+  },
+
+  /**
+   * モンスター捕獲
+   * 
+   * 初学者向けメモ：
+   * - バトル勝利後の捕獲用
+   * - 新しいモンスターを追加
+   * 
+   * @param playerId プレイヤーID
+   * @param speciesId 種族ID（フレイムビースト）
+   * @param nickname ニックネーム（任意）
+   * @param currentHp 現在HP（任意、デフォルトは基本HP）
+   * @param maxHp 最大HP（任意、デフォルトは基本HP）
+   * @returns 捕獲されたモンスター情報
+   */
+  async capture(
+    playerId: string, 
+    speciesId: string, 
+    nickname?: string,
+    currentHp?: number,
+    maxHp?: number
+  ): Promise<API応答<{
+    id: string;
+    プレイヤーID: string;
+    種族: { id: string; 名前: string; 基礎HP: number };
+    ニックネーム: string;
+    現在HP: number;
+    最大HP: number;
+    捕獲日時: string;
+  }>> {
+    return fetchAPI<API応答<{
+      id: string;
+      プレイヤーID: string;
+      種族: { id: string; 名前: string; 基礎HP: number };
+      ニックネーム: string;
+      現在HP: number;
+      最大HP: number;
+      捕獲日時: string;
+    }>>('/monsters/capture', {
+      method: 'POST',
+      body: JSON.stringify({
+        プレイヤーid: playerId,
+        種族id: speciesId,
+        ...(nickname && { ニックネーム: nickname }),
+        ...(currentHp && { 現在hp: currentHp }),
+        ...(maxHp && { 最大hp: maxHp }),
+      }),
+    });
+  },
+
+  /**
    * 野生のモンスターとのバトル
    * 
    * @param playerId プレイヤーID
