@@ -111,7 +111,7 @@ describe('BattleActions', () => {
     
     const captureButton = screen.getByTestId('capture-button')
     // secondary variantが適用されることを確認（実際のクラス名）
-    expect(captureButton).toHaveClass('bg-gray-600', 'text-white')
+    expect(captureButton).toHaveClass('bg-gray-500', 'text-white')
   })
 
   it('captureEnabled=falseの場合通常のヒントが表示される', () => {
