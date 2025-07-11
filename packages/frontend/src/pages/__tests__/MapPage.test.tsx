@@ -22,7 +22,11 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../../hooks/usePlayer', () => ({
   usePlayer: () => ({
-    player: null,
+    player: {
+      id: 'test-player-id',
+      name: 'テストプレイヤー',
+      createdAt: '2024-01-01T00:00:00.000Z'
+    },
     getPlayer: mockGetPlayer,
     isLoading: false,
     error: null,

@@ -33,6 +33,8 @@ interface UseMonstersReturn {
   error: string | null
   /** モンスター一覧取得関数 */
   loadMonsters: (playerId: string) => Promise<void>
+  /** モンスター一覧を強制リフレッシュ */
+  refreshMonsters: () => Promise<void>
   /** ニックネーム更新関数 */
   updateNickname: (monsterId: string, nickname: string) => Promise<boolean>
   /** モンスター解放関数 */
@@ -49,6 +51,7 @@ export function useMonsters(): UseMonstersReturn {
   const [monsters, setMonsters] = useState<OwnedMonster[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null)
 
   /**
    * エラーをクリア
@@ -73,39 +76,40 @@ export function useMonsters(): UseMonstersReturn {
   const loadMonsters = useCallback(async (playerId: string): Promise<void> => {
     setIsLoading(true)
     setError(null)
+    setCurrentPlayerId(playerId)
 
     try {
       // バックエンドAPIを呼び出し
-      const response = await monsterAPI.listByPlayer(playerId) as unknown as MonsterListResponse
+      const response = await monsterAPI.listByPlayer(playerId) as any
       
-      if (response.success && response.data) {
-        // APIレスポンスをOwnedMonster形式に変換
-        const ownedMonsters: OwnedMonster[] = response.data.monsters.map(monster => {
-          const species = getSpeciesInfo(monster.speciesId)
+      if (response.成功 && response.データ) {
+        // APIレスポンス（日本語キー）をOwnedMonster形式に変換
+        const ownedMonsters: OwnedMonster[] = response.データ.map((monster: any) => {
+          const species = getSpeciesInfo(monster.種族?.id || '')
           
           if (!species) {
-            console.warn(`未知の種族ID: ${monster.speciesId}`)
+            console.warn(`未知の種族ID: ${monster.種族?.id}`)
             // デフォルトの種族情報を設定
             return {
               id: monster.id,
-              playerId: monster.playerId,
-              speciesId: monster.speciesId,
-              nickname: monster.nickname || '',
-              currentHp: monster.currentHp,
-              maxHp: monster.maxHp,
-              capturedAt: monster.capturedAt,
+              playerId: playerId, // プレイヤーIDは引数から設定
+              speciesId: monster.種族?.id || '',
+              nickname: monster.ニックネーム || monster.種族?.名前 || '',
+              currentHp: monster.現在hp || 0,
+              maxHp: monster.最大hp || 100,
+              capturedAt: monster.取得日時 || new Date().toISOString(),
               species: MONSTER_TYPES[0] // フォールバック
             }
           }
           
           return {
             id: monster.id,
-            playerId: monster.playerId,
-            speciesId: monster.speciesId,
-            nickname: monster.nickname || '',
-            currentHp: monster.currentHp,
-            maxHp: monster.maxHp,
-            capturedAt: monster.capturedAt,
+            playerId: playerId,
+            speciesId: monster.種族.id,
+            nickname: monster.ニックネーム || monster.種族.名前,
+            currentHp: monster.現在hp,
+            maxHp: monster.最大hp,
+            capturedAt: monster.取得日時,
             species
           }
         })
@@ -130,6 +134,15 @@ export function useMonsters(): UseMonstersReturn {
   }, [])
 
   /**
+   * 現在のプレイヤーIDでモンスター一覧を強制リフレッシュ
+   */
+  const refreshMonsters = useCallback(async (): Promise<void> => {
+    if (currentPlayerId) {
+      await loadMonsters(currentPlayerId)
+    }
+  }, [currentPlayerId, loadMonsters])
+
+  /**
    * モンスターのニックネームを更新
    * @param monsterId - モンスターID
    * @param nickname - 新しいニックネーム
@@ -140,9 +153,9 @@ export function useMonsters(): UseMonstersReturn {
 
     try {
       // バックエンドAPIを呼び出し
-      const response = await monsterAPI.updateNickname(monsterId, nickname) as unknown as MonsterUpdateResponse
+      const response = await monsterAPI.updateNickname(monsterId, nickname) as any
       
-      if (response.success) {
+      if (response.成功) {
         // ローカル状態を更新
         setMonsters(prev => prev.map(monster =>
           monster.id === monsterId
@@ -179,9 +192,9 @@ export function useMonsters(): UseMonstersReturn {
 
     try {
       // バックエンドAPIを呼び出し
-      const response = await monsterAPI.release(monsterId) as unknown as MonsterDeleteResponse
+      const response = await monsterAPI.release(monsterId) as any
       
-      if (response.success) {
+      if (response.成功) {
         // ローカル状態から削除
         setMonsters(prev => prev.filter(monster => monster.id !== monsterId))
         
@@ -209,6 +222,7 @@ export function useMonsters(): UseMonstersReturn {
     isLoading,
     error,
     loadMonsters,
+    refreshMonsters,
     updateNickname,
     releaseMonster,
     clearError

@@ -11,6 +11,7 @@ import { Card } from '../ui/Card'
 import type { Monster } from '../../types'
 import { monsterAPI } from '../../api'
 import { usePlayer } from '../../hooks/usePlayer'
+import { useMonsters } from '../../hooks/useMonsters'
 
 /**
  * バトル画面のプロパティ
@@ -55,6 +56,7 @@ const WILD_FLAME_BEAST: Monster = {
 export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) {
   // プレイヤー情報（API統合用）
   const { player } = usePlayer()
+  const { refreshMonsters } = useMonsters()
   
   // バトル状態
   const [wildMonster, setWildMonster] = useState<Monster>({
@@ -143,6 +145,8 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
       try {
         await monsterAPI.updateHp(playerMon.id, playerMon.hp)
         addLog('モンスターの状態を保存しました', 'info')
+        // モンスター一覧を更新
+        await refreshMonsters()
       } catch (error) {
         console.error('HP更新エラー:', error)
         addLog('状態保存に失敗しました', 'info')
@@ -174,6 +178,8 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
       try {
         await monsterAPI.updateHp(playerMon.id, 0)
         addLog('モンスターの状態を保存しました', 'info')
+        // モンスター一覧を更新
+        await refreshMonsters()
       } catch (error) {
         console.error('HP更新エラー:', error)
         addLog('状態保存に失敗しました', 'info')
@@ -233,6 +239,8 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
       // プレイヤーモンスターのHP更新も実行
       try {
         await monsterAPI.updateHp(playerMon.id, playerMon.hp)
+        // モンスター一覧を更新（新しく捕獲したモンスターを含む）
+        await refreshMonsters()
       } catch (error) {
         console.error('HP更新エラー:', error)
       }
@@ -274,6 +282,8 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
       // プレイヤー敗北時もHP更新
       try {
         await monsterAPI.updateHp(playerMon.id, 0)
+        // モンスター一覧を更新
+        await refreshMonsters()
       } catch (error) {
         console.error('HP更新エラー:', error)
       }
@@ -303,6 +313,8 @@ export function BattleScreen({ playerMonster, onBattleEnd }: BattleScreenProps) 
     try {
       await monsterAPI.updateHp(playerMon.id, playerMon.hp)
       addLog('モンスターの状態を保存しました', 'info')
+      // モンスター一覧を更新
+      await refreshMonsters()
     } catch (error) {
       console.error('HP更新エラー:', error)
       addLog('状態保存に失敗しました', 'info')

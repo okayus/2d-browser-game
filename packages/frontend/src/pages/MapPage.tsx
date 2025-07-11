@@ -78,11 +78,12 @@ export function MapPage() {
    * @param type - メッセージタイプ
    */
   const addMessage = (text: string, type: GameMessage['type'] = 'info') => {
+    const timestamp = Date.now()
     const newMessage: GameMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2)}`,
+      id: `${timestamp}-${Math.random().toString(36).substring(2)}-${performance.now()}`,
       text,
       type,
-      timestamp: Date.now()
+      timestamp
     }
     
     setMessages(prev => {

@@ -62,6 +62,7 @@ export function usePlayer(): UsePlayerReturn {
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attemptedPlayerId, setAttemptedPlayerId] = useState<string | null>(null)
 
   /**
    * 現在のプレイヤーIDをSessionStorageから取得
@@ -96,6 +97,7 @@ export function usePlayer(): UsePlayerReturn {
     }
     setPlayer(null)
     setError(null)
+    setAttemptedPlayerId(null)
   }, [])
 
   /**
@@ -186,6 +188,12 @@ export function usePlayer(): UsePlayerReturn {
         // 404エラーの場合は、プレイヤーが存在しないことを示す
         if (err.status === 404) {
           errorMessage = 'プレイヤーが見つかりませんでした'
+          // 存在しないプレイヤーIDはSessionStorageから削除
+          try {
+            sessionStorage.removeItem(CURRENT_PLAYER_KEY)
+          } catch (error) {
+            console.warn('SessionStorageのクリアに失敗:', error)
+          }
         } else {
           errorMessage = err.message
         }
@@ -206,10 +214,12 @@ export function usePlayer(): UsePlayerReturn {
    */
   useEffect(() => {
     const playerId = getCurrentPlayerId()
-    if (playerId && !player && !isLoading) {
+    // 既に試行済みのIDか、現在ロード中の場合はスキップ
+    if (playerId && playerId !== attemptedPlayerId && !player && !isLoading) {
+      setAttemptedPlayerId(playerId)
       getPlayer(playerId)
     }
-  }, [getCurrentPlayerId, getPlayer, player, isLoading])
+  }, [getCurrentPlayerId, getPlayer, player, isLoading, attemptedPlayerId])
 
   return {
     player,

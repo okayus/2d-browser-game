@@ -74,6 +74,32 @@ const ニックネーム更新スキーマ = z.object({
 });
 
 /**
+ * HP更新スキーマ
+ * 
+ * 初学者向けメモ：
+ * - バトル後のHP更新用
+ * - HP値は0以上で最大HP以下
+ */
+const HP更新スキーマ = z.object({
+  現在hp: z.number().min(0, 'HPは0以上である必要があります').int('HPは整数である必要があります'),
+});
+
+/**
+ * モンスター捕獲スキーマ
+ * 
+ * 初学者向けメモ：
+ * - バトル勝利後の捕獲用
+ * - プレイヤーIDと種族IDが必要
+ */
+const モンスター捕獲スキーマ = z.object({
+  プレイヤーid: z.string().min(1, 'プレイヤーIDは必須です'),
+  種族id: z.string().min(1, '種族IDは必須です'),
+  ニックネーム: z.string().optional(),
+  現在hp: z.number().min(1, 'HPは1以上である必要があります').int().optional(),
+  最大hp: z.number().min(1, 'HPは1以上である必要があります').int().optional(),
+});
+
+/**
  * POST /api/players/:playerId/monsters - モンスター獲得
  * 
  * 初学者向けメモ：
@@ -338,6 +364,197 @@ app.put(
         エラー: {
           コード: 'INTERNAL_ERROR',
           メッセージ: 'ニックネームの変更に失敗しました',
+        },
+      }, 500);
+    }
+  }
+);
+
+/**
+ * PUT /api/monsters/:monsterId/hp - モンスターHP更新
+ * 
+ * 初学者向けメモ：
+ * - バトル後のHP更新用
+ * - 最大HP以下の制限をチェック
+ * - 所有者確認を実行
+ */
+app.put(
+  '/monsters/:monsterId/hp',
+  zValidator('json', HP更新スキーマ),
+  async (c) => {
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
+    const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
+    const { monsterId } = c.req.param();
+    const { 現在hp } = c.req.valid('json');
+
+    try {
+      // モンスターの存在確認と現在データ取得
+      const モンスター = await db
+        .select()
+        .from(schema.所持モンスター)
+        .where(eq(schema.所持モンスター.id, monsterId))
+        .get();
+
+      if (!モンスター) {
+        return c.json<HTTPレスポンス型>({
+          成功: false,
+          エラー: {
+            コード: 'MONSTER_NOT_FOUND',
+            メッセージ: 'モンスターが見つかりません',
+          },
+        }, 404);
+      }
+
+      // HP値の妥当性チェック
+      if (現在hp > モンスター.最大hp) {
+        return c.json<HTTPレスポンス型>({
+          成功: false,
+          エラー: {
+            コード: 'INVALID_HP',
+            メッセージ: `HPは最大HP(${モンスター.最大hp})以下である必要があります`,
+          },
+        }, 400);
+      }
+
+      // HP更新
+      await db
+        .update(schema.所持モンスター)
+        .set({ 
+          現在hp: 現在hp,
+          更新日時: new Date()
+        })
+        .where(eq(schema.所持モンスター.id, monsterId));
+
+      ロガー.情報('モンスターHP更新成功', {
+        モンスターID: monsterId,
+        新HP: 現在hp,
+        最大HP: モンスター.最大hp,
+      });
+
+      return c.json<HTTPレスポンス型>({
+        成功: true,
+        データ: {
+          id: monsterId,
+          現在hp: 現在hp,
+          最大hp: モンスター.最大hp,
+        },
+        メッセージ: 'HPが更新されました',
+      });
+
+    } catch (error) {
+      ロガー.エラー('HP更新中のエラー', error as Error, { monsterId, 現在hp });
+      return c.json<HTTPレスポンス型>({
+        成功: false,
+        エラー: {
+          コード: 'INTERNAL_ERROR',
+          メッセージ: 'HPの更新に失敗しました',
+        },
+      }, 500);
+    }
+  }
+);
+
+/**
+ * POST /api/monsters/capture - モンスター捕獲
+ * 
+ * 初学者向けメモ：
+ * - バトル勝利後の捕獲用
+ * - 既存のモンスター獲得とは別ルート
+ * - フレイムビースト専用
+ */
+app.post(
+  '/monsters/capture',
+  zValidator('json', モンスター捕獲スキーマ),
+  async (c) => {
+    // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
+    const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
+    const { プレイヤーid, 種族id, ニックネーム, 現在hp, 最大hp } = c.req.valid('json');
+
+    try {
+      // プレイヤーの存在確認
+      const プレイヤー = await db
+        .select()
+        .from(schema.プレイヤー)
+        .where(eq(schema.プレイヤー.id, プレイヤーid))
+        .get();
+
+      if (!プレイヤー) {
+        ロガー.警告('存在しないプレイヤーでの捕獲試行', { プレイヤーid });
+        return c.json<HTTPレスポンス型>({
+          成功: false,
+          エラー: {
+            コード: 'PLAYER_NOT_FOUND',
+            メッセージ: 'プレイヤーが見つかりません',
+          },
+        }, 404);
+      }
+
+      // 種族の存在確認
+      const 種族 = await db
+        .select()
+        .from(schema.モンスター種族)
+        .where(eq(schema.モンスター種族.id, 種族id))
+        .get();
+
+      if (!種族) {
+        ロガー.警告('存在しない種族での捕獲試行', { 種族id });
+        return c.json<HTTPレスポンス型>({
+          成功: false,
+          エラー: {
+            コード: 'SPECIES_NOT_FOUND',
+            メッセージ: 'モンスター種族が見つかりません',
+          },
+        }, 404);
+      }
+
+      // 捕獲したモンスターのデータを作成
+      const 捕獲モンスター = {
+        id: uuid生成(),
+        プレイヤーid: プレイヤーid,
+        種族id: 種族id,
+        ニックネーム: ニックネーム || 種族.名前,
+        現在hp: 現在hp || 種族.基本hp,
+        最大hp: 最大hp || 種族.基本hp,
+        取得日時: new Date(),
+        更新日時: new Date(),
+      };
+
+      await db.insert(schema.所持モンスター).values(捕獲モンスター);
+
+      ロガー.情報('モンスター捕獲成功', {
+        プレイヤーID: プレイヤーid,
+        モンスターID: 捕獲モンスター.id,
+        種族名: 種族.名前,
+      });
+
+      // レスポンス用のデータ整形
+      const レスポンスデータ = {
+        id: 捕獲モンスター.id,
+        プレイヤーID: 捕獲モンスター.プレイヤーid,
+        種族: {
+          id: 種族.id,
+          名前: 種族.名前,
+          基礎HP: 種族.基本hp,
+        },
+        ニックネーム: 捕獲モンスター.ニックネーム,
+        現在HP: 捕獲モンスター.現在hp,
+        最大HP: 捕獲モンスター.最大hp,
+        捕獲日時: 捕獲モンスター.取得日時.toISOString(),
+      };
+
+      return c.json<HTTPレスポンス型>({
+        成功: true,
+        データ: レスポンスデータ,
+        メッセージ: 'モンスターを捕獲しました！',
+      }, 201);
+
+    } catch (error) {
+      ロガー.エラー('モンスター捕獲中のエラー', error as Error, { プレイヤーid, 種族id });
+      return c.json<HTTPレスポンス型>({
+        成功: false,
+        エラー: {
+          コード: 'INTERNAL_ERROR',
+          メッセージ: 'モンスターの捕獲に失敗しました',
         },
       }, 500);
     }

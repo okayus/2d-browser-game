@@ -49,8 +49,9 @@ export function StartPage() {
     } else {
       // プレイヤーIDがあるがロードに失敗した場合の処理
       const playerId = getCurrentPlayerId()
-      if (playerId) {
-        setHasExistingGame(true)
+      if (playerId && !playerError) {
+        // 404エラーの場合はSessionStorageがクリアされるので、エラーは表示しない
+        setHasExistingGame(false)
       }
     }
   }, [player, getCurrentPlayerId])
@@ -108,15 +109,9 @@ export function StartPage() {
    * 既存ゲームの続行処理
    */
   const handleContinueGame = () => {
-    if (player && player.monsters && player.monsters.length > 0) {
-      // モンスターを持っている場合はマップ画面に遷移
-      setSuccess('ゲームを再開します...')
-      setTimeout(() => navigate('/map'), 1000)
-    } else {
-      // プレイヤー作成画面に遷移
-      setSuccess('プレイヤー作成画面に移動します...')
-      setTimeout(() => navigate('/player-creation'), 1000)
-    }
+    // プレイヤー作成画面に遷移（モンスター一覧を確認する画面）
+    setSuccess('プレイヤー作成画面に移動します...')
+    setTimeout(() => navigate('/player-creation'), 1000)
   }
 
   /**
