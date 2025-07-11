@@ -3,7 +3,7 @@
  * ルーティングとグローバルな設定を管理
  */
 import { Routes, Route } from 'react-router-dom'
-import { StartPage, PlayerCreationPage, MapPage, MonsterListPage } from './pages'
+import { StartPage, PlayerCreationPage, MapPage, MonsterListPage, BattlePage } from './pages'
 
 /**
  * アプリケーションのメインコンポーネント
@@ -24,6 +24,9 @@ function App() {
         
         {/* モンスター一覧画面（所持モンスター管理） */}
         <Route path="/monsters" element={<MonsterListPage />} />
+        
+        {/* バトル画面（野生モンスターとの戦闘） */}
+        <Route path="/battle" element={<BattlePage />} />
         
         {/* 404エラー時はスタート画面にリダイレクト */}
         <Route path="*" element={<StartPage />} />

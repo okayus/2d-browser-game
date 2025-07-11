@@ -5,3 +5,7 @@
 
 export { GameMap } from './GameMap'
 export { PlayerPanel } from './PlayerPanel'
+export { BattleScreen } from './BattleScreen'
+export { BattleField } from './BattleField'
+export { BattleActions } from './BattleActions'
+export { BattleLog } from './BattleLog'
