@@ -1,25 +1,30 @@
 /**
- * フロントエンドアプリケーションのエントリーポイント
- * React + TypeScript による実装
+ * メインエントリーポイント
+ * React アプリケーションを DOM にマウントする
  */
-
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { App } from './App.js';
-import './index.css';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import App from './App'
+import './styles/index.css'
 
 /**
- * Reactアプリケーションの初期化と描画
- * 初学者向け解説: HTMLのroot要素にReactアプリをマウント
+ * アプリケーションのルート要素を取得
+ * HTMLの#rootにReactアプリをマウント
  */
-const ルート要素 = document.getElementById('root');
-if (!ルート要素) {
-  throw new Error('root要素が見つかりません');
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+  throw new Error('Root element not found')
 }
 
-const リアクトルート = ReactDOM.createRoot(ルート要素);
-リアクトルート.render(
+/**
+ * React 18のcreateRoot APIを使用してアプリを起動
+ * BrowserRouterでルーティング機能を有効化
+ */
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
-);
+)

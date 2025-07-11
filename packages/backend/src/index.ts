@@ -35,6 +35,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use('/*', cors({
   origin: [
     'http://localhost:5173', // Vite開発サーバー
+    'http://localhost:5174', // Vite開発サーバー
     'http://localhost:3000', // 代替ポート
     'https://*.pages.dev',   // Cloudflare Pages
   ],

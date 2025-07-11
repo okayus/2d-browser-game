@@ -1,12 +1,7 @@
 /**
  * カスタムフックのエクスポート
- * 
- * 初学者向けメモ：
- * - カスタムフックの再エクスポート
- * - 使いやすいインポートパスを提供
+ * 統一されたインポートパスを提供
  */
 
-export * from './useAPI';
-
-// 使用例：
-// import { useAPI, useAPIEffect } from '@/hooks';
+export { usePlayer } from './usePlayer'
+export { useMonsters, type OwnedMonster } from './useMonsters'

@@ -1,21 +1,35 @@
 /**
  * メインアプリケーションコンポーネント
- * 
- * 初学者向けメモ：
- * - React Router を使用したSPA（Single Page Application）
- * - ルーティング機能でページ遷移を管理
- * - 全体のアプリケーション構造を定義
+ * ルーティングとグローバルな設定を管理
  */
-
-import { Router } from './Router';
+import { Routes, Route } from 'react-router-dom'
+import { StartPage, PlayerCreationPage, MapPage, MonsterListPage } from './pages'
 
 /**
  * アプリケーションのメインコンポーネント
- * 
- * 初学者向けメモ：
- * - Routerコンポーネントでアプリケーション全体のルーティングを管理
- * - シンプルな構造でReact Routerに処理を委譲
+ * 各ページへのルーティングを定義
  */
-export function App() {
-  return <Router />;
+function App() {
+  return (
+    <div className="min-h-screen">
+      <Routes>
+        {/* スタート画面（ゲーム開始・プレイヤー作成） */}
+        <Route path="/" element={<StartPage />} />
+        
+        {/* プレイヤー作成画面（パートナーモンスター選択） */}
+        <Route path="/player-creation" element={<PlayerCreationPage />} />
+        
+        {/* マップ画面（探索・移動・バトル） */}
+        <Route path="/map" element={<MapPage />} />
+        
+        {/* モンスター一覧画面（所持モンスター管理） */}
+        <Route path="/monsters" element={<MonsterListPage />} />
+        
+        {/* 404エラー時はスタート画面にリダイレクト */}
+        <Route path="*" element={<StartPage />} />
+      </Routes>
+    </div>
+  )
 }
+
+export default App
