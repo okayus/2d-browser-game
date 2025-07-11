@@ -11,7 +11,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from './db/schema';
-import { データベース初期化 } from './db/migration';
+import { Workers対応データベース初期化 } from './db/workers-init';
 import { ロガー } from './utils/logger';
 import { プレイヤールーター } from './api/player';
 import モンスターAPI from './api/monster';
@@ -68,8 +68,8 @@ app.get('/health', (c) => {
  * - データベース初期化も含む
  */
 app.use('/api/*', async (c, next) => {
-  // データベース初期化
-  await データベース初期化(c.env.DB);
+  // データベース初期化（Workers対応版）
+  await Workers対応データベース初期化(c.env.DB);
   await next();
 });
 
