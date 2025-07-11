@@ -7,8 +7,8 @@ export async function setup() {
   // Node.js環境でCrypto APIが利用できない場合のポリフィル
   if (!globalThis.crypto) {
     const { webcrypto } = await import('node:crypto')
-    // @ts-ignore
-    globalThis.crypto = webcrypto
+    // TypeScript型エラー回避のため、WebCrypto APIをCrypto型として割り当て
+    globalThis.crypto = webcrypto as Crypto
   }
   
   // getRandomValuesが利用できない場合のフォールバック

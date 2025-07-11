@@ -6,7 +6,7 @@
 // テスト環境でのCrypto API対応
 if (!globalThis.crypto) {
   // Node.js 18以降のWebCrypto APIを使用
-  const { webcrypto } = require('node:crypto')
+  const { webcrypto } = await import('node:crypto')
   globalThis.crypto = webcrypto as Crypto
 }
 
