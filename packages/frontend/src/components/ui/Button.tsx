@@ -8,7 +8,7 @@ import { cn } from '../../lib/utils'
 /**
  * ボタンのスタイルバリアント定義
  */
-type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'ghost'
+type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'default' | 'outline'
 
 /**
  * ボタンのサイズバリアント定義
@@ -41,7 +41,9 @@ const variantStyles: Record<ButtonVariant, string> = {
   secondary: 'bg-gray-500 hover:bg-gray-600 text-white shadow-md hover:shadow-lg',
   success: 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg',
   danger: 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg',
-  ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300'
+  ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300',
+  default: 'bg-gray-200 hover:bg-gray-300 text-gray-800 shadow-sm hover:shadow-md',
+  outline: 'bg-transparent hover:bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
 }
 
 /**
@@ -92,6 +94,8 @@ export function Button({
         variant === 'success' && 'focus:ring-green-500',
         variant === 'danger' && 'focus:ring-red-500',
         variant === 'ghost' && 'focus:ring-gray-500',
+        variant === 'default' && 'focus:ring-gray-400',
+        variant === 'outline' && 'focus:ring-gray-500',
         
         // ホバー効果（無効化時は除外）
         !isDisabled && 'hover:transform hover:-translate-y-0.5',

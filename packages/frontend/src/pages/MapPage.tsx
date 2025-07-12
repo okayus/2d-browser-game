@@ -6,7 +6,9 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GameMap, PlayerPanel } from '../components/game'
 import { Button, Card, CardContent } from '../components/ui'
-import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES } from '../lib/utils'
+import { updateGameState, MAP_CONFIG, MONSTER_TYPES } from '../lib/utils'
+import { usePlayer } from '../hooks/usePlayer'
+import { useMonsters } from '../hooks/useMonsters'
 
 /**
  * メッセージの型定義
@@ -35,47 +37,44 @@ interface TileInfo {
 export function MapPage() {
   const navigate = useNavigate()
   
+  // API統合フック
+  const { player, isLoading: playerLoading, error: playerError } = usePlayer()
+  const { monsters, loadMonsters, isLoading: monstersLoading, error: monstersError } = useMonsters()
+  
   // 状態管理
   const [playerPosition, setPlayerPosition] = useState(MAP_CONFIG.startPosition)
-  const [playerInfo, setPlayerInfo] = useState<{
-    name: string
-    selectedMonster?: typeof MONSTER_TYPES[0]
-  }>({ name: '' })
   const [messages, setMessages] = useState<GameMessage[]>([])
   const [selectedTileInfo, setSelectedTileInfo] = useState<TileInfo | null>(null)
+  const [isEncounterCooldown, setIsEncounterCooldown] = useState(false)
 
   /**
    * コンポーネント初期化
-   * ゲーム状態を確認し、必要に応じてリダイレクト
+   * API経由でプレイヤー・モンスター情報を取得
    */
   useEffect(() => {
-    const gameState = getGameState()
-    
-    // プレイヤー名またはモンスターが選択されていない場合の処理
-    if (!gameState.playerName) {
+    if (!player && !playerLoading) {
+      // プレイヤー情報がない場合はスタート画面に戻る
       navigate('/')
       return
     }
     
-    if (!gameState.selectedMonster) {
-      navigate('/player-creation')
-      return
+    if (player) {
+      // プレイヤーのモンスター一覧を取得
+      loadMonsters(player.id)
+      
+      /**
+       * モンスター存在チェック（既存プレイヤー対応）
+       * 初学者向けメモ：
+       * - 既存プレイヤーはバックエンドにモンスターデータが存在するはず
+       * - 新規プレイヤーでない限りマップ画面を表示
+       * - モンスター情報は非同期で読み込まれるため、プレイヤーIDがあれば表示
+       */
+      // 既存プレイヤー（プレイヤーIDが存在）の場合はマップを表示
+      // 新規プレイヤーでモンスターが本当にいない場合は後でAPIエラーで判定
+      
+      addMessage('冒険を開始しました！矢印キーまたはWASDで移動できます。', 'info')
     }
-    
-    // プレイヤー情報を設定
-    setPlayerInfo({
-      name: gameState.playerName,
-      selectedMonster: gameState.selectedMonster
-    })
-    
-    // 保存されている位置があれば復元
-    if (gameState.playerPosition) {
-      setPlayerPosition(gameState.playerPosition)
-    }
-    
-    // 初期メッセージを追加
-    addMessage('冒険を開始しました！矢印キーまたはWASDで移動できます。', 'info')
-  }, [navigate])
+  }, [player, playerLoading, navigate, loadMonsters])
 
   /**
    * メッセージを追加
@@ -83,11 +82,12 @@ export function MapPage() {
    * @param type - メッセージタイプ
    */
   const addMessage = (text: string, type: GameMessage['type'] = 'info') => {
+    const timestamp = Date.now()
     const newMessage: GameMessage = {
-      id: Date.now().toString(),
+      id: `${timestamp}-${Math.random().toString(36).substring(2)}-${performance.now()}`,
       text,
       type,
-      timestamp: Date.now()
+      timestamp
     }
     
     setMessages(prev => {
@@ -100,20 +100,47 @@ export function MapPage() {
   /**
    * プレイヤー移動処理
    * @param newPosition - 新しい位置
+   * @param tile - 移動先のタイル情報
    */
-  const handlePlayerMove = (newPosition: { x: number; y: number }) => {
+  const handlePlayerMove = (newPosition: { x: number; y: number }, tile: { type: string; walkable: boolean; icon: string; name: string }) => {
     setPlayerPosition(newPosition)
     
     // 移動を保存
     updateGameState({ playerPosition: newPosition })
     
     // 移動メッセージを追加
-    addMessage(`座標 (${newPosition.x}, ${newPosition.y}) に移動しました`, 'info')
+    addMessage(`座標 (${newPosition.x}, ${newPosition.y}) の${tile.name}に移動しました`, 'info')
     
-    // ランダムイベントの判定（10%の確率）
-    if (Math.random() < 0.1) {
+    // 草タイルでのエンカウント判定（20%の確率）
+    if (tile.type === 'grass' && !isEncounterCooldown) {
+      if (Math.random() < 0.2) {
+        handleWildMonsterEncounter()
+        return
+      }
+    }
+    
+    // その他のランダムイベントの判定（5%の確率に変更）
+    if (Math.random() < 0.05) {
       handleRandomEvent()
     }
+  }
+
+  /**
+   * 野生モンスターエンカウント処理
+   * 草タイルで20%の確率で発生
+   */
+  const handleWildMonsterEncounter = () => {
+    // エンカウントクールダウンを設定（3秒間）
+    setIsEncounterCooldown(true)
+    setTimeout(() => setIsEncounterCooldown(false), 3000)
+    
+    addMessage('🌿 草むらで何かが動いた...', 'warning')
+    addMessage('💥 野生のフレイムビーストが現れた！', 'warning')
+    
+    // バトル画面に遷移
+    setTimeout(() => {
+      navigate('/battle')
+    }, 1500)
   }
 
   /**
@@ -122,11 +149,6 @@ export function MapPage() {
    */
   const handleRandomEvent = () => {
     const events = [
-      {
-        type: 'monster_encounter',
-        message: '野生のモンスターが現れた！',
-        messageType: 'warning' as const
-      },
       {
         type: 'item_found',
         message: '何かアイテムを見つけた！',
@@ -177,6 +199,42 @@ export function MapPage() {
    */
   const handleOpenMonsterList = () => {
     navigate('/monsters')
+  }
+
+  // ローディング状態の表示
+  if (playerLoading || monstersLoading) {
+    return (
+      <div className="prototype-background">
+        <div className="prototype-card max-w-7xl">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">ゲームデータを読み込み中...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // エラー状態の表示
+  if (playerError || monstersError) {
+    return (
+      <div className="prototype-background">
+        <div className="prototype-card max-w-7xl">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center space-y-4">
+              <div className="text-red-500 text-6xl">⚠️</div>
+              <h2 className="text-xl font-bold text-gray-900">読み込みエラー</h2>
+              <p className="text-gray-600">{playerError || monstersError}</p>
+              <Button onClick={() => window.location.reload()}>
+                🔄 再読み込み
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -291,8 +349,15 @@ export function MapPage() {
             <div data-testid="player-panel">
               <PlayerPanel
                 player={{
-                  name: playerInfo.name,
-                  selectedMonster: playerInfo.selectedMonster,
+                  name: player?.name || 'プレイヤー',
+                  selectedMonster: monsters.length > 0 && monsters[0].species ? {
+                    id: monsters[0].speciesId,
+                    name: monsters[0].species.name,
+                    type: monsters[0].species.type || 'fire',
+                    imageUrl: monsters[0].species.imageUrl || '/images/monsters/default.png',
+                    description: monsters[0].species.description,
+                    baseStats: monsters[0].species.baseStats || { hp: 100, attack: 20, defense: 15 }
+                  } : undefined,
                   position: playerPosition
                 }}
               />

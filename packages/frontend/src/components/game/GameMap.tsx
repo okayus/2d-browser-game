@@ -39,7 +39,7 @@ interface GameMapProps {
   /** プレイヤーの現在位置 */
   playerPosition: Position
   /** プレイヤー移動時のコールバック */
-  onPlayerMove: (newPosition: Position) => void
+  onPlayerMove: (newPosition: Position, tile: MapTile) => void
   /** タイル選択時のコールバック */
   onTileSelect?: (position: Position, tile: MapTile) => void
 }
@@ -283,7 +283,8 @@ export function GameMap({
 
     // 移動実行
     const newPosition = { x: newX, y: newY }
-    onPlayerMove(newPosition)
+    const moveTile = TILE_TYPES[mapData[newY][newX]]
+    onPlayerMove(newPosition, moveTile)
   }
 
   /**

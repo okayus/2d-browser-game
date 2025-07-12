@@ -11,7 +11,14 @@ import { type MonsterType } from '../../lib/utils'
  */
 interface PlayerInfo {
   name: string
-  selectedMonster?: MonsterType
+  selectedMonster?: MonsterType | {
+    id: string
+    name: string
+    type: string
+    imageUrl: string
+    description: string
+    baseStats: { hp: number; attack: number; defense: number }
+  }
   position: { x: number; y: number }
 }
 
@@ -63,7 +70,7 @@ export function PlayerPanel({ player, size = 'full' }: PlayerPanelProps) {
             <h4 className="font-semibold text-gray-900 mb-2 text-sm">⚡ パートナー</h4>
             <div className="bg-blue-50 rounded-lg p-3">
               <div className="flex items-center space-x-3">
-                <div className="text-2xl">{player.selectedMonster.icon}</div>
+                <div className="text-2xl">{'icon' in player.selectedMonster ? player.selectedMonster.icon : '🎮'}</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-blue-900 truncate" data-testid="partner-name">
                     {player.selectedMonster.name}
@@ -74,11 +81,11 @@ export function PlayerPanel({ player, size = 'full' }: PlayerPanelProps) {
                         {player.selectedMonster.description}
                       </p>
                       <div className="flex justify-between text-xs text-blue-600 mt-2">
-                        <span>HP: {player.selectedMonster.baseHp}</span>
+                        <span>HP: {'baseHp' in player.selectedMonster ? player.selectedMonster.baseHp : player.selectedMonster.baseStats.hp}</span>
                         <span className={`font-medium ${
-                          player.selectedMonster.rarity === 'rare' ? 'text-purple-600' : 'text-blue-600'
+                          'rarity' in player.selectedMonster && player.selectedMonster.rarity === 'rare' ? 'text-purple-600' : 'text-blue-600'
                         }`}>
-                          {player.selectedMonster.rarity === 'rare' ? 'レア' : '一般'}
+                          {'rarity' in player.selectedMonster && player.selectedMonster.rarity === 'rare' ? 'レア' : '一般'}
                         </span>
                       </div>
                     </>

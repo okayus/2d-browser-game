@@ -508,6 +508,177 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(取得Data.データ!.名前).toBe('取得テストプレイヤー');
     expect(取得Data.データ!.作成日時).toBeDefined();
   });
+
+  /**
+   * モンスターHP更新テスト
+   * 
+   * 初学者向けメモ：
+   * - バトル後のHP更新機能をテスト
+   * - HP値の妥当性チェック確認
+   * - 最大HP以下の制限確認
+   */
+  it('モンスターのHPを更新できる', async () => {
+    // 1. プレイヤー作成
+    const プレイヤー作成Response = await app.request('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 名前: 'HPテスター' }),
+    });
+    
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
+
+    // 2. HP更新（ダメージを受けて20に減少）
+    const HP更新Response = await app.request(`/api/monsters/${初期モンスター!.id}/hp`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 現在hp: 20 }),
+    });
+
+    if (HP更新Response.status !== 200) {
+      const errorData = await HP更新Response.json();
+      console.log('HP更新エラー詳細:', errorData);
+    }
+    expect(HP更新Response.status).toBe(200);
+    const HP更新Data = await HP更新Response.json() as APIレスポンス<{ id: string; 現在hp: number; 最大hp: number }>;
+    
+    expect(HP更新Data.成功).toBe(true);
+    expect(HP更新Data.データ!.現在hp).toBe(20);
+    expect(HP更新Data.データ!.最大hp).toBe(初期モンスター!.最大HP);
+
+    // データベース確認
+    const 更新されたモンスター = await db
+      .select()
+      .from(schema.所持モンスター)
+      .where(eq(schema.所持モンスター.id, 初期モンスター!.id));
+    
+    expect(更新されたモンスター[0]?.現在hp).toBe(20);
+  });
+
+  /**
+   * HP更新バリデーションテスト
+   * 
+   * 初学者向けメモ：
+   * - 最大HP超過の防止確認
+   * - 負の値の防止確認
+   * - 適切なエラーメッセージ確認
+   */
+  it('最大HPを超える値でHP更新がエラーになる', async () => {
+    // 1. プレイヤー作成
+    const プレイヤー作成Response = await app.request('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 名前: 'HP制限テスター' }),
+    });
+    
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
+
+    // 2. 最大HPを超える値で更新試行
+    const HP更新Response = await app.request(`/api/monsters/${初期モンスター!.id}/hp`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 現在hp: 999 }), // 最大HPより大きい値
+    });
+
+    expect(HP更新Response.status).toBe(400);
+    const HP更新Data = await HP更新Response.json() as APIレスポンス<unknown>;
+    
+    expect(HP更新Data.成功).toBe(false);
+    expect(HP更新Data.エラー?.コード).toBe('INVALID_HP');
+  });
+
+  /**
+   * モンスター捕獲テスト
+   * 
+   * 初学者向けメモ：
+   * - バトル勝利後の捕獲機能をテスト
+   * - プレイヤーの所持モンスターに追加されることを確認
+   * - 捕獲したモンスターの情報確認
+   */
+  it('バトル後にモンスターを捕獲できる', async () => {
+    // 1. プレイヤー作成
+    const プレイヤー作成Response = await app.request('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 名前: '捕獲テスター' }),
+    });
+    
+    const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
+    const プレイヤーId = プレイヤーData.データ!.id;
+
+    // 2. フレイムビーストを捕獲
+    const 種族一覧 = await db.select().from(schema.モンスター種族);
+    const フレイムビースト種族 = 種族一覧.find(s => s.名前 === 'フレイムビースト');
+    expect(フレイムビースト種族).toBeDefined();
+
+    const 捕獲Response = await app.request('/api/monsters/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        プレイヤーid: プレイヤーId,
+        種族id: フレイムビースト種族!.id,
+        ニックネーム: '捕獲されたフレイムビースト',
+        現在hp: 30,
+        最大hp: 100
+      }),
+    });
+
+    expect(捕獲Response.status).toBe(201);
+    const 捕獲Data = await 捕獲Response.json() as APIレスポンス<モンスター獲得データ型>;
+    
+    expect(捕獲Data.成功).toBe(true);
+    expect(捕獲Data.データ!.種族.名前).toBe('フレイムビースト');
+    expect(捕獲Data.データ!.ニックネーム).toBe('捕獲されたフレイムビースト');
+    expect(捕獲Data.データ!.現在HP).toBe(30);
+    expect(捕獲Data.データ!.最大HP).toBe(100);
+
+    // データベース確認（初期モンスター + 捕獲で2体）
+    const 所持モンスター = await db
+      .select()
+      .from(schema.所持モンスター)
+      .where(eq(schema.所持モンスター.プレイヤーid, プレイヤーId));
+    
+    expect(所持モンスター).toHaveLength(2);
+    
+    // 捕獲したモンスターの確認
+    const 捕獲モンスター = 所持モンスター.find(m => m.id === 捕獲Data.データ!.id);
+    expect(捕獲モンスター).toBeDefined();
+    expect(捕獲モンスター!.ニックネーム).toBe('捕獲されたフレイムビースト');
+  });
+
+  /**
+   * 存在しないプレイヤーでの捕獲エラーテスト
+   * 
+   * 初学者向けメモ：
+   * - 不正なプレイヤーIDでの捕獲防止
+   * - 適切なエラーハンドリング確認
+   */
+  it('存在しないプレイヤーでモンスター捕獲がエラーになる', async () => {
+    const 存在しないプレイヤーId = 'non-existent-player-id';
+    
+    // 種族情報取得
+    const 種族一覧 = await db.select().from(schema.モンスター種族);
+    const フレイムビースト種族 = 種族一覧.find(s => s.名前 === 'フレイムビースト');
+
+    const 捕獲Response = await app.request('/api/monsters/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        プレイヤーid: 存在しないプレイヤーId,
+        種族id: フレイムビースト種族!.id,
+        ニックネーム: 'テスト',
+        現在hp: 50,
+        最大hp: 100
+      }),
+    });
+
+    expect(捕獲Response.status).toBe(404);
+    const 捕獲Data = await 捕獲Response.json() as APIレスポンス<unknown>;
+    
+    expect(捕獲Data.成功).toBe(false);
+    expect(捕獲Data.エラー?.コード).toBe('PLAYER_NOT_FOUND');
+  });
 });
 
 /**

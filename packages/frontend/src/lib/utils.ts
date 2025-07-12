@@ -93,24 +93,33 @@ export const MONSTER_TYPES = [
     name: 'でんきネズミ',
     description: '電気を操る小さなモンスター',
     icon: '⚡',
+    type: 'electric' as const,
     baseHp: 35,
-    rarity: 'common' as const
+    rarity: 'common' as const,
+    imageUrl: '/images/monsters/electric-mouse.png',
+    baseStats: { hp: 35, attack: 15, defense: 10 }
   },
   {
     id: 'fire_lizard' as const,
     name: 'ほのおトカゲ',
     description: '炎を吐くトカゲのモンスター',
     icon: '🔥',
+    type: 'fire' as const,
     baseHp: 40,
-    rarity: 'common' as const
+    rarity: 'common' as const,
+    imageUrl: '/images/monsters/fire-lizard.png',
+    baseStats: { hp: 40, attack: 18, defense: 12 }
   },
   {
     id: 'water_turtle' as const,
     name: 'みずガメ',
     description: '水を操る亀のモンスター',
     icon: '💧',
+    type: 'water' as const,
     baseHp: 45,
-    rarity: 'rare' as const
+    rarity: 'rare' as const,
+    imageUrl: '/images/monsters/water-turtle.png',
+    baseStats: { hp: 45, attack: 16, defense: 20 }
   }
 ]
 

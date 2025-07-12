@@ -5,7 +5,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, CardHeader, CardContent, CardFooter, Input } from '../components/ui'
-import { getGameState, MONSTER_TYPES, validatePlayerName, getStorageData } from '../lib/utils'
+import { MONSTER_TYPES, validatePlayerName } from '../lib/utils'
+import { usePlayer } from '../hooks/usePlayer'
 import { useMonsters, type OwnedMonster } from '../hooks'
 
 // useMonsters フックから型を取得するため、ここでの型定義は不要
@@ -16,6 +17,9 @@ import { useMonsters, type OwnedMonster } from '../hooks'
  */
 export function MonsterListPage() {
   const navigate = useNavigate()
+  
+  // プレイヤー管理フック
+  const { player, isLoading: playerLoading } = usePlayer()
   
   // モンスター管理フック
   const { 
@@ -29,7 +33,6 @@ export function MonsterListPage() {
   } = useMonsters()
   
   // 状態管理
-  const [playerName, setPlayerName] = useState('')
   const [editingMonster, setEditingMonster] = useState<string | null>(null)
   const [editNickname, setEditNickname] = useState('')
   const [sortBy, setSortBy] = useState<'capturedAt' | 'name' | 'species'>('capturedAt')
@@ -37,27 +40,20 @@ export function MonsterListPage() {
 
   /**
    * コンポーネント初期化
-   * ゲーム状態を確認し、モンスターデータをロード
+   * プレイヤー情報を確認し、モンスターデータをロード
    */
   useEffect(() => {
-    const gameState = getGameState()
-    const storedPlayerId = getStorageData('player_id')
-    
-    if (!gameState.playerName) {
+    if (!player && !playerLoading) {
+      // プレイヤー情報がない場合はスタート画面に戻る
       navigate('/')
       return
     }
     
-    setPlayerName(gameState.playerName)
-    
-    if (storedPlayerId && typeof storedPlayerId === 'string') {
+    if (player) {
       // バックエンドからモンスター一覧を取得
-      loadMonsters(storedPlayerId)
-    } else {
-      // プレイヤーIDが無い場合は、サンプルデータを表示
-      console.warn('プレイヤーIDが見つかりません。サンプルデータを使用します。')
+      loadMonsters(player.id)
     }
-  }, [navigate, loadMonsters])
+  }, [player, playerLoading, navigate, loadMonsters])
 
 
   /**
@@ -172,7 +168,7 @@ export function MonsterListPage() {
               <span className="text-2xl">🎒</span>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">モンスター一覧</h1>
-                <p className="text-sm text-gray-600">{playerName}の所持モンスター</p>
+                <p className="text-sm text-gray-600">{player?.name || 'プレイヤー'}の所持モンスター</p>
               </div>
             </div>
             <Button

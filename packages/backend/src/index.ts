@@ -11,7 +11,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from './db/schema';
-import { データベース初期化 } from './db/migration';
+import { Workers対応データベース初期化 } from './db/workers-init';
 import { ロガー } from './utils/logger';
 import { プレイヤールーター } from './api/player';
 import モンスターAPI from './api/monster';
@@ -68,24 +68,36 @@ app.get('/health', (c) => {
  * - データベース初期化も含む
  */
 app.use('/api/*', async (c, next) => {
-  // データベース初期化
-  await データベース初期化(c.env.DB);
+  // データベース初期化（Workers対応版）
+  await Workers対応データベース初期化(c.env.DB);
   await next();
 });
 
 // プレイヤーAPIのマウント
-app.route('/api/players', (() => {
-  const プレイヤーApp = new Hono<{ Bindings: Bindings }>();
+app.use('/api/players/*', async (c, next) => {
+  const db = drizzle(c.env.DB, { schema });
+  const router = プレイヤールーター(db);
   
-  // 全てのプレイヤーエンドポイント
-  プレイヤーApp.all('/*', async (c) => {
-    const db = drizzle(c.env.DB, { schema });
-    const router = プレイヤールーター(db);
-    return router.fetch(c.req.raw, c.env);
+  // パスを調整してルーターに転送
+  const originalPath = c.req.path;
+  const newPath = originalPath.replace('/api/players', '') || '/';
+  
+  // 新しいリクエストオブジェクトを作成
+  const newUrl = new URL(c.req.url);
+  newUrl.pathname = newPath;
+  
+  const newRequest = new Request(newUrl.toString(), {
+    method: c.req.method,
+    headers: c.req.header(),
+    body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? c.req.raw.body : undefined,
   });
   
-  return プレイヤーApp;
-})());
+  // ルーターで処理
+  const response = await router.fetch(newRequest, c.env);
+  
+  // レスポンスをそのまま返す
+  return response;
+});
 
 // モンスターAPIのマウント
 app.route('/api', モンスターAPI);

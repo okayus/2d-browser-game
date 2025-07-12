@@ -1,17 +1,21 @@
 /**
  * プレイヤー作成画面コンポーネント
  * パートナーモンスターの選択を管理
+ * API統合版 - usePlayerフック使用
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllMonsters, getGameState, updateGameState, type MonsterType } from '../lib/utils'
+import { usePlayer } from '../hooks/usePlayer'
+import { monsterAPI } from '../api'
+import { getAllMonsters, type MonsterType } from '../lib/utils'
 
 /**
  * プレイヤー作成画面のメインコンポーネント
- * プロトタイプのplayer-creation.htmlの機能をReactで再実装
+ * API統合版 - プレイヤー情報をAPIで管理
  */
 export function PlayerCreationPage() {
   const navigate = useNavigate()
+  const { player, createPlayer, getCurrentPlayerId, isLoading: playerLoading, error: playerError } = usePlayer()
   
   // 状態管理
   const [playerName, setPlayerName] = useState('')
@@ -24,27 +28,44 @@ export function PlayerCreationPage() {
 
   /**
    * コンポーネント初期化
-   * プレイヤー名の確認と既存選択の復元
+   * プレイヤー情報の確認
    */
   useEffect(() => {
-    const gameState = getGameState()
+    console.log('PlayerCreationPage useEffect:', { player, playerLoading, getCurrentPlayerId: getCurrentPlayerId() })
     
-    if (!gameState.playerName) {
-      // プレイヤー名が設定されていない場合はスタート画面に戻る
+    // プレイヤー情報の取得が完了するまで待機
+    if (playerLoading) {
+      console.log('プレイヤー情報読み込み中...')
+      return
+    }
+    
+    if (!player) {
+      // プレイヤー情報がない場合はスタート画面に戻る
+      console.log('プレイヤー情報なし、スタート画面に遷移')
       navigate('/')
       return
     }
     
-    setPlayerName(gameState.playerName)
+    // プレイヤー情報が取得できた場合の処理
+    setPlayerName(player.name)
     
-    // 既存の選択があれば復元
-    if (gameState.selectedMonster) {
-      const existingMonster = monsters.find(m => m.id === gameState.selectedMonster?.id)
-      if (existingMonster) {
-        setSelectedMonster(existingMonster)
-      }
+    /**
+     * 既存プレイヤーの判定と自動遷移
+     * 初学者向けメモ：
+     * - SessionStorageからプレイヤーIDが読み込まれた場合は既存プレイヤー
+     * - 既存プレイヤーはモンスター選択をスキップしてマップ画面に直接遷移
+     * - 新規プレイヤーの場合のみモンスター選択画面を表示
+     */
+    const playerId = getCurrentPlayerId()
+    console.log('プレイヤーID確認:', { playerId, playerIdMatch: player.id === playerId })
+    
+    if (playerId && player.id === playerId) {
+      console.log('既存プレイヤー検出、マップ画面に遷移')
+      navigate('/map')
+    } else {
+      console.log('新規プレイヤー、モンスター選択画面を表示')
     }
-  }, [navigate, monsters])
+  }, [player, playerLoading, navigate, getCurrentPlayerId])
 
   /**
    * モンスター選択処理
@@ -53,14 +74,11 @@ export function PlayerCreationPage() {
   const handleMonsterSelect = (monster: MonsterType) => {
     setSelectedMonster(monster)
     setError('')
-    
-    // 選択状態を保存
-    updateGameState({ selectedMonster: monster })
   }
 
   /**
    * 冒険開始処理
-   * マップ画面に遷移
+   * 初期モンスターをAPIで追加してマップ画面に遷移
    */
   const handleStartAdventure = async () => {
     if (!selectedMonster) {
@@ -68,20 +86,26 @@ export function PlayerCreationPage() {
       return
     }
 
+    if (!player) {
+      setError('プレイヤー情報が見つかりません')
+      return
+    }
+
     setIsLoading(true)
     setError('')
 
     try {
-      // ゲーム状態を更新
-      const success = updateGameState({
-        selectedMonster,
-        gameState: 'playing'
-      })
+      // APIで初期モンスターを追加
+      await monsterAPI.capture(
+        player.id,
+        selectedMonster.id, // 種族ID
+        selectedMonster.name, // ニックネーム（種族名をデフォルト）
+        selectedMonster.baseHp, // 現在HP
+        selectedMonster.baseHp // 最大HP
+      )
 
-      if (!success) {
-        setError('データの保存に失敗しました。もう一度お試しください。')
-        return
-      }
+      // 成功メッセージを表示
+      setError('') // エラーをクリア
 
       // 少し遅延してからマップ画面に遷移
       setTimeout(() => {
@@ -89,7 +113,8 @@ export function PlayerCreationPage() {
       }, 1000)
 
     } catch (err) {
-      setError('予期しないエラーが発生しました。')
+      console.error('初期モンスター追加エラー:', err)
+      setError('初期モンスターの追加に失敗しました。もう一度お試しください。')
     } finally {
       setIsLoading(false)
     }
@@ -153,9 +178,9 @@ export function PlayerCreationPage() {
           </div>
 
           {/* エラーメッセージ */}
-          {error && (
+          {(error || playerError) && (
             <div className="message-error animate-slide-up" data-testid="error-message">
-              {error}
+              {error || playerError}
             </div>
           )}
 
@@ -286,9 +311,9 @@ export function PlayerCreationPage() {
               {/* 冒険開始ボタン */}
               <button
                 onClick={handleStartAdventure}
-                disabled={!selectedMonster || isLoading}
+                disabled={!selectedMonster || isLoading || playerLoading}
                 className={`w-full py-3 px-6 text-lg font-bold rounded-lg transition-all ${
-                  selectedMonster && !isLoading
+                  selectedMonster && !isLoading && !playerLoading
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
@@ -296,7 +321,7 @@ export function PlayerCreationPage() {
               >
                 <span className="inline-flex items-center space-x-2">
                   <span>🗺️</span>
-                  <span>{isLoading ? '準備中...' : '冒険を開始する'}</span>
+                  <span>{isLoading || playerLoading ? '準備中...' : '冒険を開始する'}</span>
                 </span>
               </button>
 
