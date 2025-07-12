@@ -13,51 +13,52 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema';
-import { プレイヤールーター } from '../api/player';
+import { playerRouter } from '../api/player';
 import モンスターAPI from '../api/monster';
 import { 初期データ投入 } from '../db/seed';
 import type { データベース型 } from '../db/types';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
 
-// APIレスポンスの型定義
+// APIレスポンスの型定義（Updated to new schema）
 interface APIレスポンス<T = unknown> {
-  成功: boolean;
-  メッセージ?: string;
-  データ?: T;
-  件数?: number;
-  エラー?: {
-    コード: string;
-    メッセージ: string;
+  success: boolean;
+  message?: string;
+  data?: T;
+  count?: number;
+  error?: {
+    code: string;
+    message: string;
   };
 }
 
-// プレイヤー作成レスポンスの型定義
+// プレイヤー作成レスポンスの型定義（Updated to new schema）
 interface プレイヤー作成データ型 {
   id: string;
-  名前: string;
-  作成日時: string;
-  初期モンスター: {
+  name: string;
+  firebaseUid: string;
+  createdAt: string;
+  initialMonster: {
     id: string;
-    種族名: string;
-    ニックネーム: string;
-    現在HP: number;
-    最大HP: number;
+    speciesName: string;
+    nickname: string;
+    currentHp: number;
+    maxHp: number;
   } | null;
 }
 
-// モンスター獲得レスポンスの型定義
+// モンスター獲得レスポンスの型定義（Updated to new schema）
 interface モンスター獲得データ型 {
   id: string;
-  プレイヤーID: string;
-  種族: {
+  playerId: string;
+  species: {
     id: string;
-    名前: string;
-    基礎HP: number;
+    name: string;
+    baseHp: number;
   };
-  ニックネーム: string;
-  現在HP: number;
-  最大HP: number;
-  捕獲日時: string;
+  nickname: string;
+  currentHp: number;
+  maxHp: number;
+  capturedAt: string;
 }
 
 // モンスター一覧データの型定義
@@ -104,11 +105,12 @@ beforeAll(async () => {
   // Drizzle ORM インスタンス作成
   db = drizzle(testDb, { schema }) as unknown as データベース型;
 
-  // テーブル作成（本来はマイグレーションで実行）
+  // テーブル作成（本来はマイグレーションで実行）- 新スキーマ対応
   testDb.exec(`
     CREATE TABLE IF NOT EXISTS players (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      firebase_uid TEXT UNIQUE,
       created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
       updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
     );
@@ -153,7 +155,7 @@ beforeAll(async () => {
   });
 
   // APIルーターを設定
-  app.route('/api/players', プレイヤールーター(db));
+  app.route('/api/players', playerRouter(db));
   app.route('/api', モンスターAPI);
 });
 
@@ -177,14 +179,15 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
    * - 初期モンスターが付与されていることを確認
    */
   it('プレイヤー作成時に初期モンスターが付与される', async () => {
-    // プレイヤー作成リクエスト
+    // プレイヤー作成リクエスト（新スキーマ：Firebase UID必須）
     const response = await app.request('/api/players', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        名前: 'テストプレイヤー',
+        name: 'テストプレイヤー',
+        firebaseUid: 'test-firebase-uid-001',
       }),
     });
 
@@ -192,35 +195,37 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(response.status).toBe(201);
     const responseData = await response.json() as APIレスポンス<プレイヤー作成データ型>;
     
-    expect(responseData.成功).toBe(true);
-    expect(responseData.メッセージ).toBe('プレイヤーが作成されました');
-    expect(responseData.データ?.名前).toBe('テストプレイヤー');
-    expect(responseData.データ?.初期モンスター).toBeDefined();
+    expect(responseData.success).toBe(true);
+    expect(responseData.message).toBe('プレイヤーが作成されました');
+    expect(responseData.data?.name).toBe('テストプレイヤー');
+    expect(responseData.data?.firebaseUid).toBe('test-firebase-uid-001');
+    expect(responseData.data?.initialMonster).toBeDefined();
     
     // 初期モンスターの検証
-    const 初期モンスター = responseData.データ?.初期モンスター;
-    expect(初期モンスター).not.toBeNull();
-    expect(['でんきネズミ', 'ほのおトカゲ', 'くさモグラ']).toContain(初期モンスター?.種族名);
-    expect(初期モンスター?.現在HP).toBeGreaterThan(0);
-    expect(初期モンスター?.最大HP).toBeGreaterThan(0);
+    const initialMonster = responseData.data?.initialMonster;
+    expect(initialMonster).not.toBeNull();
+    expect(['でんきネズミ', 'ほのおトカゲ', 'くさモグラ']).toContain(initialMonster?.speciesName);
+    expect(initialMonster?.currentHp).toBeGreaterThan(0);
+    expect(initialMonster?.maxHp).toBeGreaterThan(0);
 
     // データベース確認
     const 保存されたプレイヤー = await db
       .select()
-      .from(schema.プレイヤー)
-      .where(eq(schema.プレイヤー.id, responseData.データ?.id ?? ''));
+      .from(schema.players)
+      .where(eq(schema.players.id, responseData.data?.id ?? ''));
     
     expect(保存されたプレイヤー).toHaveLength(1);
-    expect(保存されたプレイヤー[0]?.名前).toBe('テストプレイヤー');
+    expect(保存されたプレイヤー[0]?.name).toBe('テストプレイヤー');
+    expect(保存されたプレイヤー[0]?.firebaseUid).toBe('test-firebase-uid-001');
 
     // 所持モンスター確認
     const 所持モンスター = await db
       .select()
-      .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.プレイヤーid, responseData.データ?.id ?? ''));
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.playerId, responseData.data?.id ?? ''));
     
     expect(所持モンスター).toHaveLength(1);
-    expect(所持モンスター[0]?.id).toBe(初期モンスター?.id);
+    expect(所持モンスター[0]?.id).toBe(initialMonster?.id);
   });
 
   /**
