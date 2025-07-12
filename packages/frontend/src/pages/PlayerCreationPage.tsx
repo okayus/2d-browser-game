@@ -15,7 +15,7 @@ import { getAllMonsters, type MonsterType } from '../lib/utils'
  */
 export function PlayerCreationPage() {
   const navigate = useNavigate()
-  const { player, createPlayer, isLoading: playerLoading, error: playerError } = usePlayer()
+  const { player, createPlayer, getCurrentPlayerId, isLoading: playerLoading, error: playerError } = usePlayer()
   
   // 状態管理
   const [playerName, setPlayerName] = useState('')
@@ -31,21 +31,41 @@ export function PlayerCreationPage() {
    * プレイヤー情報の確認
    */
   useEffect(() => {
-    if (!player && !playerLoading) {
+    console.log('PlayerCreationPage useEffect:', { player, playerLoading, getCurrentPlayerId: getCurrentPlayerId() })
+    
+    // プレイヤー情報の取得が完了するまで待機
+    if (playerLoading) {
+      console.log('プレイヤー情報読み込み中...')
+      return
+    }
+    
+    if (!player) {
       // プレイヤー情報がない場合はスタート画面に戻る
+      console.log('プレイヤー情報なし、スタート画面に遷移')
       navigate('/')
       return
     }
     
-    if (player) {
-      setPlayerName(player.name)
-      
-      // 既にモンスターを持っている場合はマップ画面に遷移
-      if (player.monsters && player.monsters.length > 0) {
-        navigate('/map')
-      }
+    // プレイヤー情報が取得できた場合の処理
+    setPlayerName(player.name)
+    
+    /**
+     * 既存プレイヤーの判定と自動遷移
+     * 初学者向けメモ：
+     * - SessionStorageからプレイヤーIDが読み込まれた場合は既存プレイヤー
+     * - 既存プレイヤーはモンスター選択をスキップしてマップ画面に直接遷移
+     * - 新規プレイヤーの場合のみモンスター選択画面を表示
+     */
+    const playerId = getCurrentPlayerId()
+    console.log('プレイヤーID確認:', { playerId, playerIdMatch: player.id === playerId })
+    
+    if (playerId && player.id === playerId) {
+      console.log('既存プレイヤー検出、マップ画面に遷移')
+      navigate('/map')
+    } else {
+      console.log('新規プレイヤー、モンスター選択画面を表示')
     }
-  }, [player, playerLoading, navigate])
+  }, [player, playerLoading, navigate, getCurrentPlayerId])
 
   /**
    * モンスター選択処理

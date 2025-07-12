@@ -30,6 +30,7 @@ export function StartPage() {
   const [playerName, setPlayerName] = useState('')
   const [success, setSuccess] = useState('')
   const [hasExistingGame, setHasExistingGame] = useState(false)
+  const [gameMode, setGameMode] = useState<'new' | 'continue' | 'choose'>('choose')
   
   // エラーは usePlayer フックから取得
   const error = playerError
@@ -37,24 +38,33 @@ export function StartPage() {
 
   /**
    * コンポーネント初期化時の処理
-   * 既存のプレイヤーをチェック
+   * 既存のプレイヤーをチェックし、適切なモードを設定
+   * 
+   * 初学者向けメモ：
+   * - 既存プレイヤーがいる場合は選択肢を表示
+   * - 新規作成と継続を明確に分離
    */
   useEffect(() => {
     // usePlayerフックが自動的にSessionStorageからロードするため、
     // player情報が取得できた場合は既存ゲーム扱い
     if (player) {
-      setPlayerName(player.name)
       setHasExistingGame(true)
-      setSuccess(`既存のプレイヤー「${player.name}」でログイン中です`)
+      setGameMode('choose')
+      setSuccess(`既存のプレイヤー「${player.name}」が見つかりました`)
     } else {
       // プレイヤーIDがあるがロードに失敗した場合の処理
       const playerId = getCurrentPlayerId()
       if (playerId && !playerError) {
         // 404エラーの場合はSessionStorageがクリアされるので、エラーは表示しない
         setHasExistingGame(false)
+        setGameMode('new')
+      } else {
+        // 完全に新規の場合
+        setHasExistingGame(false)
+        setGameMode('new')
       }
     }
-  }, [player, getCurrentPlayerId])
+  }, [player, getCurrentPlayerId, playerError])
 
   /**
    * プレイヤー名のリアルタイムバリデーション
@@ -71,16 +81,22 @@ export function StartPage() {
   }
 
   /**
-   * フォーム送信処理
-   * プレイヤー名を検証し、プレイヤー作成画面に遷移
+   * 新規プレイヤー作成処理
+   * 既存データをクリアしてから新しいプレイヤーを作成
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreateNewPlayer = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // バリデーション実行
     const validation = validatePlayerName(playerName)
     if (!validation.isValid) {
       return // エラーは usePlayer フックで管理
+    }
+
+    // 既存データをクリアしてから新規作成
+    if (hasExistingGame) {
+      clearSession()
+      setHasExistingGame(false)
     }
 
     // 成功メッセージを表示
@@ -107,11 +123,37 @@ export function StartPage() {
 
   /**
    * 既存ゲームの続行処理
+   * 既存プレイヤーの場合はプレイヤー作成画面経由でマップに遷移
+   * 
+   * 初学者向けメモ：
+   * - PlayerCreationPageで適切な条件分岐を行い、自動的にマップに遷移
+   * - SessionStorageのプレイヤーIDを保持したまま遷移
    */
   const handleContinueGame = () => {
-    // プレイヤー作成画面に遷移（モンスター一覧を確認する画面）
-    setSuccess('プレイヤー作成画面に移動します...')
-    setTimeout(() => navigate('/player-creation'), 1000)
+    if (player) {
+      setSuccess(`プレイヤー「${player.name}」で続行します...`)
+      setTimeout(() => navigate('/player-creation'), 1000)
+    }
+  }
+
+  /**
+   * 新規プレイヤー作成モードに切り替え
+   */
+  const handleSwitchToNewMode = () => {
+    setGameMode('new')
+    setPlayerName('')
+    setSuccess('')
+    clearError()
+  }
+
+  /**
+   * モード選択に戻る
+   */
+  const handleBackToChoose = () => {
+    setGameMode('choose')
+    setPlayerName('')
+    setSuccess('')
+    clearError()
   }
 
   /**
@@ -134,6 +176,13 @@ export function StartPage() {
    */
   const validation = validatePlayerName(playerName)
   const isSubmitDisabled = !validation.isValid || isLoading
+
+  /**
+   * 現在のゲームモードに応じた表示制御
+   */
+  const shouldShowForm = gameMode === 'new'
+  const shouldShowChoiceButtons = gameMode === 'choose' && hasExistingGame
+  const shouldShowContinueOption = hasExistingGame && gameMode !== 'new'
 
   return (
     <div className="prototype-background">
@@ -171,7 +220,43 @@ export function StartPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6" data-testid="player-form">
+          {shouldShowChoiceButtons && (
+            <div className="space-y-4 mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 text-center">
+                既存のプレイヤーが見つかりました
+              </h2>
+              <p className="text-gray-600 text-center">
+                プレイヤー「{player?.name}」で続行しますか？
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={handleContinueGame}
+                  className="py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
+                  data-testid="continue-existing-button"
+                >
+                  <span className="flex items-center justify-center space-x-2">
+                    <span>🔄</span>
+                    <span>続行する</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSwitchToNewMode}
+                  className="py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200"
+                  data-testid="create-new-button"
+                >
+                  <span className="flex items-center justify-center space-x-2">
+                    <span>✨</span>
+                    <span>新規作成</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {shouldShowForm && (
+            <form onSubmit={handleCreateNewPlayer} className="space-y-6" data-testid="player-form">
             
             {/* プレイヤー名入力 */}
             <div>
@@ -210,40 +295,45 @@ export function StartPage() {
             </div>
 
             {/* 開始ボタン */}
-            <button
-              type="submit"
-              className="w-full py-4 px-6 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-              disabled={isSubmitDisabled}
-              data-testid="start-game-button"
-            >
-              <span className="inline-flex items-center space-x-2">
-                <span>🚀</span>
-                <span>{isLoading ? '準備中...' : 'ゲーム開始'}</span>
-              </span>
-            </button>
-          </form>
+              <div className="flex space-x-4">
+                {shouldShowContinueOption && (
+                  <button
+                    type="button"
+                    onClick={handleBackToChoose}
+                    className="flex-1 py-4 px-6 text-lg bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200"
+                    data-testid="back-button"
+                  >
+                    <span className="inline-flex items-center space-x-2">
+                      <span>←</span>
+                      <span>戻る</span>
+                    </span>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="flex-1 py-4 px-6 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                  disabled={isSubmitDisabled}
+                  data-testid="start-game-button"
+                >
+                  <span className="inline-flex items-center space-x-2">
+                    <span>🚀</span>
+                    <span>{isLoading ? '準備中...' : 'ゲーム開始'}</span>
+                  </span>
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* 追加オプション */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="text-center space-y-3">
-              {hasExistingGame && (
-                <button
-                  type="button"
-                  onClick={handleContinueGame}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-300"
-                  data-testid="continue-game-button"
-                >
-                  既存のゲームを続ける
-                </button>
-              )}
-              
               <button
                 type="button"
                 onClick={handleResetGame}
                 className="block w-full text-gray-500 hover:text-gray-700 text-sm transition-colors duration-300"
                 data-testid="reset-game-button"
               >
-                ゲームデータをリセット
+                すべてのゲームデータをリセット
               </button>
             </div>
           </div>

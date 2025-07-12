@@ -5,16 +5,15 @@
  * - バックエンドAPIとの通信を管理
  * - 型安全なAPI呼び出しを提供
  * - エラーハンドリングを一元化
+ * - 英語キーに統一したレスポンス処理
  */
 
 import type { 
-  プレイヤー作成レスポンス,
-  プレイヤー一覧応答,
-  モンスター一覧レスポンス,
-  APIエラーレスポンス,
-  プレイヤー応答,
-  API応答,
-} from '@monster-game/shared';
+  PlayerCreationResponse,
+  PlayerResponse,
+  MonsterListResponse,
+  APIResponse
+} from '../types/api';
 
 // API基本設定
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
@@ -64,24 +63,22 @@ async function fetchAPI<T>(
     const data = await response.json();
 
     if (!response.ok) {
-      // バックエンドの実際のエラーレスポンス形式に合わせる
-      const errorData = data as { success: boolean; error: string } | APIエラーレスポンス;
+      // 英語キーのエラーレスポンス形式に統一
+      const errorData = data as { success: boolean; error: string; message?: string };
       
       if ('error' in errorData && typeof errorData.error === 'string') {
-        // シンプルなエラー形式の場合
+        // 標準的なエラー形式
         throw new APIError(
           errorData.error,
           response.status,
           'API_ERROR'
         );
-      } else if ('エラー' in errorData && errorData.エラー && typeof errorData.エラー === 'object') {
-        // 構造化エラー形式の場合
-        const errorDetail = errorData.エラー as { メッセージ?: string; コード?: string };
+      } else if ('message' in errorData && typeof errorData.message === 'string') {
+        // メッセージ形式のエラー
         throw new APIError(
-          errorDetail.メッセージ || 'APIエラーが発生しました',
+          errorData.message,
           response.status,
-          errorDetail.コード || 'UNKNOWN_ERROR',
-          errorData.エラー
+          'API_ERROR'
         );
       } else {
         // その他の場合
@@ -119,8 +116,8 @@ export const playerAPI = {
    * @param name プレイヤー名（1-20文字）
    * @returns 作成されたプレイヤー情報
    */
-  async create(name: string): Promise<プレイヤー作成レスポンス> {
-    return fetchAPI<プレイヤー作成レスポンス>('/players', {
+  async create(name: string): Promise<PlayerCreationResponse> {
+    return fetchAPI<PlayerCreationResponse>('/players', {
       method: 'POST',
       body: JSON.stringify({ 名前: name }),
     });
@@ -131,8 +128,8 @@ export const playerAPI = {
    * 
    * @returns プレイヤー一覧
    */
-  async list(): Promise<プレイヤー一覧応答> {
-    return fetchAPI<プレイヤー一覧応答>('/players');
+  async list(): Promise<PlayerResponse[]> {
+    return fetchAPI<PlayerResponse[]>('/players');
   },
 
   /**
@@ -141,8 +138,8 @@ export const playerAPI = {
    * @param id プレイヤーID
    * @returns プレイヤー情報
    */
-  async get(id: string): Promise<プレイヤー応答> {
-    return fetchAPI<プレイヤー応答>(`/players/${id}`);
+  async get(id: string): Promise<PlayerResponse> {
+    return fetchAPI<PlayerResponse>(`/players/${id}`);
   },
 };
 
@@ -156,8 +153,8 @@ export const monsterAPI = {
    * @param playerId プレイヤーID
    * @returns 所持モンスター一覧
    */
-  async listByPlayer(playerId: string): Promise<モンスター一覧レスポンス> {
-    return fetchAPI<モンスター一覧レスポンス>(`/players/${playerId}/monsters`);
+  async listByPlayer(playerId: string): Promise<MonsterListResponse> {
+    return fetchAPI<MonsterListResponse>(`/players/${playerId}/monsters`);
   },
 
   /**
@@ -167,10 +164,10 @@ export const monsterAPI = {
    * @param nickname 新しいニックネーム
    * @returns 更新後のモンスター情報
    */
-  async updateNickname(monsterId: string, nickname: string): Promise<API応答<{ id: string; ニックネーム: string }>> {
-    return fetchAPI<API応答<{ id: string; ニックネーム: string }>>(`/monsters/${monsterId}`, {
+  async updateNickname(monsterId: string, nickname: string): Promise<APIResponse<{ id: string; nickname: string }>> {
+    return fetchAPI<APIResponse<{ id: string; nickname: string }>>(`/monsters/${monsterId}`, {
       method: 'PUT',
-      body: JSON.stringify({ ニックネーム: nickname }),
+      body: JSON.stringify({ nickname: nickname }),
     });
   },
 
@@ -180,8 +177,8 @@ export const monsterAPI = {
    * @param monsterId モンスターID
    * @returns 削除結果
    */
-  async release(monsterId: string): Promise<API応答<{ message: string }>> {
-    return fetchAPI<API応答<{ message: string }>>(`/monsters/${monsterId}`, {
+  async release(monsterId: string): Promise<APIResponse<{ message: string }>> {
+    return fetchAPI<APIResponse<{ message: string }>>(`/monsters/${monsterId}`, {
       method: 'DELETE',
     });
   },
@@ -197,10 +194,10 @@ export const monsterAPI = {
    * @param currentHp 現在のHP
    * @returns 更新結果
    */
-  async updateHp(monsterId: string, currentHp: number): Promise<API応答<{ id: string; 現在hp: number; 最大hp: number }>> {
-    return fetchAPI<API応答<{ id: string; 現在hp: number; 最大hp: number }>>(`/monsters/${monsterId}/hp`, {
+  async updateHp(monsterId: string, currentHp: number): Promise<APIResponse<{ id: string; currentHp: number; maxHp: number }>> {
+    return fetchAPI<APIResponse<{ id: string; currentHp: number; maxHp: number }>>(`/monsters/${monsterId}/hp`, {
       method: 'PUT',
-      body: JSON.stringify({ 現在hp: currentHp }),
+      body: JSON.stringify({ currentHp: currentHp }),
     });
   },
 
@@ -218,37 +215,41 @@ export const monsterAPI = {
    * @param maxHp 最大HP（任意、デフォルトは基本HP）
    * @returns 捕獲されたモンスター情報
    */
+  /**
+   * モンスター捕獲API
+   * 初学者向けメモ：英語キーに統一したリクエスト・レスポンス形式
+   */
   async capture(
     playerId: string, 
     speciesId: string, 
     nickname?: string,
     currentHp?: number,
     maxHp?: number
-  ): Promise<API応答<{
+  ): Promise<APIResponse<{
     id: string;
-    プレイヤーID: string;
-    種族: { id: string; 名前: string; 基礎HP: number };
-    ニックネーム: string;
-    現在HP: number;
-    最大HP: number;
-    捕獲日時: string;
+    playerId: string;
+    species: { id: string; name: string; baseHp: number };
+    nickname: string;
+    currentHp: number;
+    maxHp: number;
+    capturedAt: string;
   }>> {
-    return fetchAPI<API応答<{
+    return fetchAPI<APIResponse<{
       id: string;
-      プレイヤーID: string;
-      種族: { id: string; 名前: string; 基礎HP: number };
-      ニックネーム: string;
-      現在HP: number;
-      最大HP: number;
-      捕獲日時: string;
+      playerId: string;
+      species: { id: string; name: string; baseHp: number };
+      nickname: string;
+      currentHp: number;
+      maxHp: number;
+      capturedAt: string;
     }>>('/monsters/capture', {
       method: 'POST',
       body: JSON.stringify({
-        プレイヤーid: playerId,
-        種族id: speciesId,
-        ...(nickname && { ニックネーム: nickname }),
-        ...(currentHp && { 現在hp: currentHp }),
-        ...(maxHp && { 最大hp: maxHp }),
+        playerId: playerId,
+        speciesId: speciesId,
+        ...(nickname && { nickname: nickname }),
+        ...(currentHp && { currentHp: currentHp }),
+        ...(maxHp && { maxHp: maxHp }),
       }),
     });
   },
@@ -260,25 +261,25 @@ export const monsterAPI = {
    * @param action アクション（'attack' | 'capture'）
    * @returns バトル結果
    */
-  async battle(playerId: string, action: 'attack' | 'capture'): Promise<API応答<unknown>> {
-    return fetchAPI<API応答<unknown>>('/battle', {
+  async battle(playerId: string, action: 'attack' | 'capture'): Promise<APIResponse<unknown>> {
+    return fetchAPI<APIResponse<unknown>>('/battle', {
       method: 'POST',
       body: JSON.stringify({
-        プレイヤーid: playerId,
-        アクション: action,
+        playerId: playerId,
+        action: action,
       }),
     });
   },
 };
 
 /**
- * 初学者向けメモ：APIクライアントの使用例
+ * 初学者向けメモ：APIクライアントの使用例（英語キー統一版）
  * 
  * ```typescript
  * // プレイヤー作成
  * try {
  *   const response = await playerAPI.create('太郎');
- *   console.log('作成されたプレイヤー:', response.データ);
+ *   console.log('作成されたプレイヤー:', response.data);
  * } catch (error) {
  *   if (error instanceof APIError) {
  *     console.error('APIエラー:', error.message);
@@ -288,7 +289,7 @@ export const monsterAPI = {
  * // モンスター一覧取得
  * try {
  *   const response = await monsterAPI.listByPlayer('player123');
- *   console.log('所持モンスター:', response.データ.モンスター);
+ *   console.log('所持モンスター:', response.data?.monsters);
  * } catch (error) {
  *   if (error instanceof APIError) {
  *     console.error('APIエラー:', error.message);

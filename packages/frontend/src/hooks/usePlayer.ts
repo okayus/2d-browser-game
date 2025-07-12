@@ -1,11 +1,24 @@
 /**
  * プレイヤー管理用のカスタムフック
  * プレイヤーの作成・取得・状態管理を行う
- * 完全API統合版 - LocalStorage依存を排除
+ * SessionManager統合版 - 将来の認証認可機能に対応
+ * 
+ * 初学者向けメモ：
+ * - バックエンドAPIの英語レスポンス形式に対応
+ * - 型安全性を確保しながらプレイヤー情報を管理
+ * - SessionManagerでセッション管理を抽象化
+ * - 将来のFirebase Auth等への対応を考慮した設計
+ * - エラーハンドリングを統合
  */
 import { useState, useCallback, useEffect } from 'react'
 import { playerAPI, APIError } from '../api'
-import type { PlayerCreationResponse, PlayerResponse } from '../types/api'
+import { sessionManager } from '../lib/sessionManager'
+import type { 
+  PlayerCreationResponse, 
+  PlayerResponse, 
+  PlayerCreationData,
+  InitialMonsterData 
+} from '../types/api'
 
 /**
  * プレイヤー情報の型定義
@@ -14,7 +27,7 @@ interface PlayerData {
   id: string
   name: string
   createdAt: string
-  initialMonsterId?: string
+  initialMonster?: InitialMonsterData
   monsters?: Array<{
     id: string
     speciesId: string
@@ -50,13 +63,18 @@ interface UsePlayerReturn {
 }
 
 /**
- * SessionStorage管理のヘルパー関数
+ * SessionManager統合により、直接的なSessionStorage操作は不要
+ * 代わりにsessionManagerインスタンスを使用してセッション管理を抽象化
+ * 
+ * 初学者向けメモ：
+ * - sessionManagerが認証方式の詳細を隠蔽
+ * - 将来の認証プロバイダー変更時も影響を受けない
+ * - テスト時のモック化が容易
  */
-const CURRENT_PLAYER_KEY = 'current_player_id'
 
 /**
  * プレイヤー管理用のカスタムフック
- * 完全API統合版 - SessionStorageでプレイヤーIDのみ管理
+ * SessionManager統合版 - 将来の認証認可機能に対応
  */
 export function usePlayer(): UsePlayerReturn {
   const [player, setPlayer] = useState<PlayerData | null>(null)
@@ -65,36 +83,39 @@ export function usePlayer(): UsePlayerReturn {
   const [attemptedPlayerId, setAttemptedPlayerId] = useState<string | null>(null)
 
   /**
-   * 現在のプレイヤーIDをSessionStorageから取得
+   * 現在のプレイヤーIDをSessionManagerから取得
+   * 
+   * 初学者向けメモ：
+   * - sessionManagerが実際のストレージ操作を抽象化
+   * - LocalSessionManager、FirebaseSessionManager等の実装詳細を隠蔽
+   * - 認証方式の変更時も呼び出し元コードは変更不要
    */
   const getCurrentPlayerId = useCallback((): string | null => {
-    try {
-      return sessionStorage.getItem(CURRENT_PLAYER_KEY)
-    } catch {
-      return null
-    }
+    return sessionManager.getCurrentPlayerId()
   }, [])
 
   /**
-   * プレイヤーIDをSessionStorageに保存
+   * プレイヤーIDをSessionManagerに保存
+   * 
+   * 初学者向けメモ：
+   * - sessionManagerが適切なストレージ方式を選択
+   * - Firebase Authの場合はユーザー情報と関連付け
+   * - エラーハンドリングはSessionManager内で実装
    */
   const setCurrentPlayerId = useCallback((id: string): void => {
-    try {
-      sessionStorage.setItem(CURRENT_PLAYER_KEY, id)
-    } catch (error) {
-      console.warn('SessionStorageへの保存に失敗:', error)
-    }
+    sessionManager.setCurrentPlayerId(id)
   }, [])
 
   /**
    * プレイヤーセッションをクリア
+   * 
+   * 初学者向けメモ：
+   * - sessionManagerがセッション情報を適切にクリア
+   * - Firebase Authの場合はサインアウト処理も実行
+   * - ローカル状態も併せてリセット
    */
   const clearSession = useCallback((): void => {
-    try {
-      sessionStorage.removeItem(CURRENT_PLAYER_KEY)
-    } catch (error) {
-      console.warn('SessionStorageのクリアに失敗:', error)
-    }
+    sessionManager.clearSession()
     setPlayer(null)
     setError(null)
     setAttemptedPlayerId(null)
@@ -117,15 +138,18 @@ export function usePlayer(): UsePlayerReturn {
     setError(null)
 
     try {
-      // バックエンドAPIを呼び出し
-      const response = await playerAPI.create(name) as unknown as PlayerCreationResponse
+      /**
+       * バックエンドAPIを呼び出し
+       * 初学者向けメモ：英語レスポンス形式に対応した処理
+       */
+      const response = await playerAPI.create(name)
       
       if (response.success && response.data) {
         const playerData: PlayerData = {
           id: response.data.id,
           name: response.data.name,
           createdAt: response.data.createdAt,
-          initialMonsterId: response.data.initialMonsterId || undefined
+          initialMonster: response.data.initialMonster || undefined
         }
         
         // SessionStorageにプレイヤーIDのみ保存
@@ -134,7 +158,7 @@ export function usePlayer(): UsePlayerReturn {
         setPlayer(playerData)
         return playerData
       } else {
-        const errorMsg = '予期しないレスポンス形式です'
+        const errorMsg = response.message || '予期しないレスポンス形式です'
         setError(errorMsg)
         return null
       }
@@ -164,8 +188,11 @@ export function usePlayer(): UsePlayerReturn {
     setError(null)
 
     try {
-      // バックエンドAPIを呼び出し
-      const response = await playerAPI.get(id) as unknown as PlayerResponse
+      /**
+       * バックエンドAPIを呼び出し
+       * 初学者向けメモ：英語レスポンス形式に対応した処理
+       */
+      const response = await playerAPI.get(id)
       
       if (response.success && response.data) {
         const playerData: PlayerData = {
@@ -177,7 +204,7 @@ export function usePlayer(): UsePlayerReturn {
         setPlayer(playerData)
         return playerData
       } else {
-        const errorMsg = 'プレイヤー情報が見つかりませんでした'
+        const errorMsg = response.message || 'プレイヤー情報が見つかりませんでした'
         setError(errorMsg)
         return null
       }

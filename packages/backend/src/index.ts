@@ -74,18 +74,30 @@ app.use('/api/*', async (c, next) => {
 });
 
 // プレイヤーAPIのマウント
-app.route('/api/players', (() => {
-  const プレイヤーApp = new Hono<{ Bindings: Bindings }>();
+app.use('/api/players/*', async (c, next) => {
+  const db = drizzle(c.env.DB, { schema });
+  const router = プレイヤールーター(db);
   
-  // 全てのプレイヤーエンドポイント
-  プレイヤーApp.all('/*', async (c) => {
-    const db = drizzle(c.env.DB, { schema });
-    const router = プレイヤールーター(db);
-    return router.fetch(c.req.raw, c.env);
+  // パスを調整してルーターに転送
+  const originalPath = c.req.path;
+  const newPath = originalPath.replace('/api/players', '') || '/';
+  
+  // 新しいリクエストオブジェクトを作成
+  const newUrl = new URL(c.req.url);
+  newUrl.pathname = newPath;
+  
+  const newRequest = new Request(newUrl.toString(), {
+    method: c.req.method,
+    headers: c.req.header(),
+    body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? c.req.raw.body : undefined,
   });
   
-  return プレイヤーApp;
-})());
+  // ルーターで処理
+  const response = await router.fetch(newRequest, c.env);
+  
+  // レスポンスをそのまま返す
+  return response;
+});
 
 // モンスターAPIのマウント
 app.route('/api', モンスターAPI);

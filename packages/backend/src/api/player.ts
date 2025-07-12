@@ -84,20 +84,23 @@ export function プレイヤールーター(db: データベース型) {
       // 初期モンスターを付与
       const 初期モンスター = await 初期モンスター付与(db, プレイヤーid);
       
-      // 成功レスポンス
+      /**
+       * 成功レスポンス
+       * 初学者向けメモ：英語キーを使用してフロントエンドとの整合性を確保
+       */
       return c.json({
-        成功: true,
-        メッセージ: 'プレイヤーが作成されました',
-        データ: {
+        success: true,
+        message: 'プレイヤーが作成されました',
+        data: {
           id: 新しいプレイヤー.id,
-          名前: 新しいプレイヤー.名前,
-          作成日時: 新しいプレイヤー.作成日時,
-          初期モンスター: 初期モンスター ? {
+          name: 新しいプレイヤー.名前,
+          createdAt: 新しいプレイヤー.作成日時,
+          initialMonster: 初期モンスター ? {
             id: 初期モンスター.id,
-            種族名: 初期モンスター.種族名,
-            ニックネーム: 初期モンスター.ニックネーム,
-            現在HP: 初期モンスター.現在HP,
-            最大HP: 初期モンスター.最大HP,
+            speciesName: 初期モンスター.種族名,
+            nickname: 初期モンスター.ニックネーム,
+            currentHp: 初期モンスター.現在HP,
+            maxHp: 初期モンスター.最大HP,
           } : null,
         },
       }, 201);
@@ -105,10 +108,14 @@ export function プレイヤールーター(db: データベース型) {
     } catch (error) {
       ロガー.エラー('プレイヤー作成エラー', error instanceof Error ? error : new Error(String(error)));
       
+      /**
+       * エラーレスポンス
+       * 初学者向けメモ：英語キーを使用してフロントエンドとの整合性を確保
+       */
       return c.json({
-        成功: false,
-        メッセージ: 'プレイヤーの作成に失敗しました',
-        エラー: error instanceof Error ? error.message : '不明なエラー',
+        success: false,
+        message: 'プレイヤーの作成に失敗しました',
+        error: error instanceof Error ? error.message : '不明なエラー',
       }, 500);
     }
   });
@@ -134,29 +141,40 @@ export function プレイヤールーター(db: データベース型) {
       
       // プレイヤーが見つからない場合
       if (!プレイヤー情報) {
+        /**
+         * プレイヤーが見つからない場合のレスポンス
+         * 初学者向けメモ：404エラーは英語キーで統一
+         */
         return c.json({
-          成功: false,
-          メッセージ: '指定されたプレイヤーが見つかりません',
+          success: false,
+          message: '指定されたプレイヤーが見つかりません',
         }, 404);
       }
       
-      // 成功レスポンス
+      /**
+       * プレイヤー取得成功レスポンス
+       * 初学者向けメモ：英語キーを使用してフロントエンドとの整合性を確保
+       */
       return c.json({
-        成功: true,
-        データ: {
+        success: true,
+        data: {
           id: プレイヤー情報.id,
-          名前: プレイヤー情報.名前,
-          作成日時: プレイヤー情報.作成日時,
+          name: プレイヤー情報.名前,
+          createdAt: プレイヤー情報.作成日時,
         },
       });
       
     } catch (error) {
       ロガー.エラー('プレイヤー取得エラー', error instanceof Error ? error : new Error(String(error)));
       
+      /**
+       * プレイヤー取得エラーレスポンス
+       * 初学者向けメモ：英語キーを使用してフロントエンドとの整合性を確保
+       */
       return c.json({
-        成功: false,
-        メッセージ: 'プレイヤーの取得に失敗しました',
-        エラー: error instanceof Error ? error.message : '不明なエラー',
+        success: false,
+        message: 'プレイヤーの取得に失敗しました',
+        error: error instanceof Error ? error.message : '不明なエラー',
       }, 500);
     }
   });
@@ -181,19 +199,31 @@ export function プレイヤールーター(db: データベース型) {
         .from(プレイヤー)
         .orderBy(プレイヤー.作成日時);
       
+      /**
+       * プレイヤー一覧取得成功レスポンス
+       * 初学者向けメモ：英語キーを使用してフロントエンドとの整合性を確保
+       */
       return c.json({
-        成功: true,
-        データ: プレイヤー一覧,
-        件数: プレイヤー一覧.length,
+        success: true,
+        data: プレイヤー一覧.map(player => ({
+          id: player.id,
+          name: player.名前,
+          createdAt: player.作成日時,
+        })),
+        count: プレイヤー一覧.length,
       });
       
     } catch (error) {
       ロガー.エラー('プレイヤー一覧取得エラー', error instanceof Error ? error : new Error(String(error)));
       
+      /**
+       * プレイヤー一覧取得エラーレスポンス
+       * 初学者向けメモ：英語キーを使用してフロントエンドとの整合性を確保
+       */
       return c.json({
-        成功: false,
-        メッセージ: 'プレイヤー一覧の取得に失敗しました',
-        エラー: error instanceof Error ? error.message : '不明なエラー',
+        success: false,
+        message: 'プレイヤー一覧の取得に失敗しました',
+        error: error instanceof Error ? error.message : '不明なエラー',
       }, 500);
     }
   });

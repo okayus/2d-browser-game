@@ -80,24 +80,24 @@ export function useMonsters(): UseMonstersReturn {
 
     try {
       // バックエンドAPIを呼び出し
-      const response = await monsterAPI.listByPlayer(playerId) as any
+      const response = await monsterAPI.listByPlayer(playerId)
       
-      if (response.成功 && response.データ) {
-        // APIレスポンス（日本語キー）をOwnedMonster形式に変換
-        const ownedMonsters: OwnedMonster[] = response.データ.map((monster: any) => {
-          const species = getSpeciesInfo(monster.種族?.id || '')
+      if (response.success && response.data) {
+        // APIレスポンス（英語キー）をOwnedMonster形式に変換
+        const ownedMonsters: OwnedMonster[] = response.data.monsters?.map((monster: any) => {
+          const species = getSpeciesInfo(monster.speciesId || monster.species?.id || '')
           
           if (!species) {
-            console.warn(`未知の種族ID: ${monster.種族?.id}`)
+            console.warn(`未知の種族ID: ${monster.speciesId || monster.species?.id}`)
             // デフォルトの種族情報を設定
             return {
               id: monster.id,
               playerId: playerId, // プレイヤーIDは引数から設定
-              speciesId: monster.種族?.id || '',
-              nickname: monster.ニックネーム || monster.種族?.名前 || '',
-              currentHp: monster.現在hp || 0,
-              maxHp: monster.最大hp || 100,
-              capturedAt: monster.取得日時 || new Date().toISOString(),
+              speciesId: monster.speciesId || monster.species?.id || '',
+              nickname: monster.nickname || monster.species?.name || '',
+              currentHp: monster.currentHp || 0,
+              maxHp: monster.maxHp || 100,
+              capturedAt: monster.capturedAt || new Date().toISOString(),
               species: MONSTER_TYPES[0] // フォールバック
             }
           }
@@ -105,14 +105,14 @@ export function useMonsters(): UseMonstersReturn {
           return {
             id: monster.id,
             playerId: playerId,
-            speciesId: monster.種族.id,
-            nickname: monster.ニックネーム || monster.種族.名前,
-            currentHp: monster.現在hp,
-            maxHp: monster.最大hp,
-            capturedAt: monster.取得日時,
+            speciesId: monster.speciesId || monster.species?.id,
+            nickname: monster.nickname || monster.species?.name,
+            currentHp: monster.currentHp,
+            maxHp: monster.maxHp,
+            capturedAt: monster.capturedAt,
             species
           }
-        })
+        }) || []
         
         setMonsters(ownedMonsters)
       } else {
@@ -153,9 +153,9 @@ export function useMonsters(): UseMonstersReturn {
 
     try {
       // バックエンドAPIを呼び出し
-      const response = await monsterAPI.updateNickname(monsterId, nickname) as any
+      const response = await monsterAPI.updateNickname(monsterId, nickname)
       
-      if (response.成功) {
+      if (response.success) {
         // ローカル状態を更新
         setMonsters(prev => prev.map(monster =>
           monster.id === monsterId
@@ -192,9 +192,9 @@ export function useMonsters(): UseMonstersReturn {
 
     try {
       // バックエンドAPIを呼び出し
-      const response = await monsterAPI.release(monsterId) as any
+      const response = await monsterAPI.release(monsterId)
       
-      if (response.成功) {
+      if (response.success) {
         // ローカル状態から削除
         setMonsters(prev => prev.filter(monster => monster.id !== monsterId))
         
