@@ -73,6 +73,12 @@ const nicknameUpdateSchema = z.object({
   nickname: z.string().min(1, 'ニックネームは必須です').max(20, 'ニックネームは20文字以内で入力してください'),
 });
 
+// 後方互換性のためのエイリアス（Backward compatibility aliases）
+const モンスター獲得スキーマ = monsterAcquisitionSchema;
+const モンスター一覧クエリスキーマ = monsterListQuerySchema;
+const ニックネーム更新スキーマ = nicknameUpdateSchema;
+type HTTPレスポンス型<T = unknown> = HTTPResponseType<T>;
+
 /**
  * POST /api/players/:playerId/monsters - モンスター獲得
  * 
