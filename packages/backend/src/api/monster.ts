@@ -15,15 +15,15 @@ import { eq, and, desc } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { uuid生成 } from '../utils/uuid';
 
-// HTTPレスポンス型定義（一時的な実装）
-interface HTTPレスポンス型<T = unknown> {
-  readonly 成功: boolean;
-  readonly データ?: T;
-  readonly メッセージ?: string;
-  readonly 件数?: number;
-  readonly エラー?: {
-    readonly コード: string;
-    readonly メッセージ: string;
+// HTTPレスポンス型定義（HTTP response type definition）
+interface HTTPResponseType<T = unknown> {
+  readonly success: boolean;
+  readonly data?: T;
+  readonly message?: string;
+  readonly count?: number;
+  readonly error?: {
+    readonly code: string;
+    readonly message: string;
   };
 }
 import { ロガー } from '../utils/logger';
@@ -39,38 +39,38 @@ type Env = {
 const app = new Hono<Env>();
 
 /**
- * モンスター獲得リクエストのスキーマ
+ * モンスター獲得リクエストのスキーマ（Monster acquisition request schema）
  * 
- * 初学者向けメモ：
- * - 種族IDは必須
- * - UUIDフォーマットをチェック
+ * 初学者向けメモ：（For beginners:）
+ * - 種族IDは必須（Species ID is required）
+ * - UUIDフォーマットをチェック（Check UUID format）
  */
-const モンスター獲得スキーマ = z.object({
-  種族ID: z.string().min(1, '種族IDは必須です'),
+const monsterAcquisitionSchema = z.object({
+  speciesId: z.string().min(1, '種族IDは必須です'),
 });
 
 /**
- * モンスター一覧クエリのスキーマ
+ * モンスター一覧クエリのスキーマ（Monster list query schema）
  * 
- * 初学者向けメモ：
- * - ソート条件は任意
- * - デフォルトは捕獲日時の降順
+ * 初学者向けメモ：（For beginners:）
+ * - ソート条件は任意（Sort conditions are optional）
+ * - デフォルトは捕獲日時の降順（Default is descending order by capture time）
  */
-const モンスター一覧クエリスキーマ = z.object({
+const monsterListQuerySchema = z.object({
   sort: z.enum(['captured_at', 'name', 'hp']).optional().default('captured_at'),
   order: z.enum(['asc', 'desc']).optional().default('desc'),
-  種族ID: z.string().optional(),
+  speciesId: z.string().optional(),
 });
 
 /**
- * ニックネーム更新スキーマ
+ * ニックネーム更新スキーマ（Nickname update schema）
  * 
- * 初学者向けメモ：
- * - 1〜20文字の制限
- * - 空文字は不可
+ * 初学者向けメモ：（For beginners:）
+ * - 1〜20文字の制限（1-20 character limit）
+ * - 空文字は不可（Empty strings not allowed）
  */
-const ニックネーム更新スキーマ = z.object({
-  ニックネーム: z.string().min(1, 'ニックネームは必須です').max(20, 'ニックネームは20文字以内で入力してください'),
+const nicknameUpdateSchema = z.object({
+  nickname: z.string().min(1, 'ニックネームは必須です').max(20, 'ニックネームは20文字以内で入力してください'),
 });
 
 /**
