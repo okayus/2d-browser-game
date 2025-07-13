@@ -35,8 +35,8 @@ app.get('/health', async (c) => {
   try {
     // データベース接続テスト
     const db = drizzle(c.env.DB, { schema });
-    await db.select({ count: schema.モンスター種族.id })
-      .from(schema.モンスター種族)
+    await db.select({ count: schema.monsterSpecies.id })
+      .from(schema.monsterSpecies)
       .limit(1);
     
     return c.json({
@@ -60,7 +60,7 @@ app.get('/health', async (c) => {
 app.get('/monster-species', async (c) => {
   try {
     const db = drizzle(c.env.DB, { schema });
-    const species = await db.select().from(schema.モンスター種族);
+    const species = await db.select().from(schema.monsterSpecies);
     
     return c.json({
       success: true,
@@ -152,8 +152,8 @@ app.get('/players/:id/monsters', async (c) => {
     
     // プレイヤーの存在確認
     const player = await db.select()
-      .from(schema.プレイヤー)
-      .where(eq(schema.プレイヤー.id, playerId))
+      .from(schema.players)
+      .where(eq(schema.players.id, playerId))
       .limit(1);
     
     if (player.length === 0) {

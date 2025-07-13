@@ -1,33 +1,41 @@
 /**
- * API レスポンス型定義（暫定版）
- * バックエンドの実際の型定義に合わせる必要があります
+ * API レスポンス型定義
+ * 共有パッケージから型をインポートして型安全性を確保
  */
 
-export interface APIResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-}
+import type {
+  ApiResponse,
+  Player,
+  PlayerCreationApiResponse,
+  OwnedMonster,
+  HttpResponseType,
+  AuthUser,
+  AuthState,
+  AuthTokens,
+} from '@monster-game/shared';
 
-export interface PlayerData {
-  id: string
-  name: string
-  createdAt: string
-  initialMonsterId?: string
-}
+// フロントエンド用の再エクスポート
+export type {
+  ApiResponse,
+  Player,
+  PlayerCreationApiResponse,
+  OwnedMonster,
+  HttpResponseType,
+  AuthUser,
+  AuthState,
+  AuthTokens,
+};
 
-export interface MonsterData {
-  id: string
-  playerId: string
-  speciesId: string
-  nickname: string
-  currentHp: number
-  maxHp: number
-  capturedAt: string
-}
+// 後方互換性のためのエイリアス
+export type APIResponse<T> = ApiResponse<T>;
+export type PlayerData = Player & {
+  initialMonsterId?: string;
+};
+export type MonsterData = OwnedMonster;
 
-export interface PlayerCreationResponse extends APIResponse<PlayerData> {}
-export interface PlayerResponse extends APIResponse<PlayerData> {}
-export interface MonsterListResponse extends APIResponse<{ monsters: MonsterData[] }> {}
-export interface MonsterUpdateResponse extends APIResponse<{ id: string; nickname: string }> {}
-export interface MonsterDeleteResponse extends APIResponse<{ message: string }> {}
+// レスポンス型のエイリアス
+export type PlayerCreationResponse = PlayerCreationApiResponse;
+export type PlayerResponse = ApiResponse<Player>;
+export type MonsterListResponse = HttpResponseType<OwnedMonster[]>;
+export type MonsterUpdateResponse = HttpResponseType<{ id: string; nickname: string }>;
+export type MonsterDeleteResponse = HttpResponseType<{ message: string }>;

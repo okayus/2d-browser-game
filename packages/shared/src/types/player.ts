@@ -18,6 +18,8 @@ export interface Player {
   id: string;
   /** プレイヤー名（3-20文字）（Player name, 3-20 characters） */
   name: string;
+  /** Firebase UID（Firebase認証用）（Firebase UID for authentication） */
+  firebaseUid?: string;
   /** アカウント作成日時（Account creation timestamp） */
   createdAt: string;
 }
@@ -47,8 +49,14 @@ export interface PlayerCreationData {
 export interface PlayerCreationResponse {
   /** 作成されたプレイヤー情報（Created player information） */
   player: Player;
-  /** 初期付与されたモンスターのID（Initial monster ID） */
-  initialMonsterId: string;
+  /** 初期付与されたモンスター情報（Initial monster information） */
+  initialMonster: {
+    id: string;
+    speciesName: string;
+    nickname: string;
+    currentHp: number;
+    maxHp: number;
+  } | null;
 }
 
 // 後方互換性のためのエイリアス（Backward compatibility aliases）

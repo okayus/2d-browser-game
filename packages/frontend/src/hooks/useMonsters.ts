@@ -80,7 +80,8 @@ export function useMonsters(): UseMonstersReturn {
       
       if (response.success && response.data) {
         // APIレスポンスをOwnedMonster形式に変換
-        const ownedMonsters: OwnedMonster[] = response.data.monsters.map(monster => {
+        const monstersData = Array.isArray(response.data) ? response.data : (response.data as any).monsters || [];
+        const ownedMonsters: OwnedMonster[] = monstersData.map((monster: any) => {
           const species = getSpeciesInfo(monster.speciesId)
           
           if (!species) {

@@ -94,7 +94,15 @@ export interface PlayerListResponse extends ApiResponse<Player[]> {
 export interface PlayerCreationApiResponse extends ApiResponse<{
   id: string;
   name: string;
-  initialMonsterId?: string;
+  firebaseUid?: string;
+  createdAt: string;
+  initialMonster: {
+    id: string;
+    speciesName: string;
+    nickname: string;
+    currentHp: number;
+    maxHp: number;
+  } | null;
 }> {}
 
 /**

@@ -69,7 +69,7 @@ export function usePlayer(): UsePlayerReturn {
           id: response.data.id,
           name: response.data.name,
           createdAt: response.data.createdAt,
-          initialMonsterId: response.data.initialMonsterId || undefined
+          initialMonsterId: response.data.initialMonster?.id || undefined
         }
         
         // ローカルストレージに保存
