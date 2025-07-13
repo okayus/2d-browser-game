@@ -84,3 +84,57 @@ pnpm dev
 ### 検索
 カスタムスラッシュコマンド /gemini-search を使うこと
 shadcn などあなたが知らないライブラリの使い方などを調査するときに使用して
+
+## Firebase Authentication 設定
+
+このプロジェクトではFirebase Authenticationを使用してユーザー認証を実装します。
+
+### 概要
+
+- **認証方式**: Firebase Authentication (Email/Password, Google)
+- **JWT検証**: Community Library (Cloudflare Workers対応)
+- **セッション管理**: Cloudflare KV (JWT公開鍵キャッシュ)
+- **設定管理**: Workers Secrets (Firebase設定)
+
+### 必要なリソース
+
+#### 1. Firebase Project設定
+- Firebase Console: https://console.firebase.google.com/
+- Authentication設定（Email/Password、Google）
+- Project ID（環境変数で設定）
+
+#### 2. Cloudflareリソース
+- **KV Namespace**: JWT公開鍵キャッシュ用
+- **Workers Secrets**: Firebase Project ID等の機密情報
+- **Environment Variables**: 各種設定値
+
+#### 3. ライブラリ・ツール
+- Frontend: Firebase SDK v9+
+- Backend: Community JWT Library (Workers対応)
+- Configuration: wrangler.jsonc
+
+### 実装フロー
+
+1. **バックエンド認証ミドルウェア**
+   - JWT token検証
+   - Firebase UIDと内部プレイヤーID関連付け
+   - API保護
+
+2. **フロントエンド認証UI**
+   - ログイン/サインアップフォーム
+   - 認証状態管理
+   - APIリクエスト時のtoken付与
+
+### セキュリティ考慮事項
+
+- JWTトークンの適切な検証（exp, aud, iss, sub）
+- HTTPS必須
+- Firebase Admin SDKは使用不可（Node.js依存のため）
+- Community libraryまたは手動JWT検証を使用
+
+### 参考ドキュメント
+
+- Firebase Auth Documentation: https://firebase.google.com/docs/auth
+- Firebase ID Token Verification: https://firebase.google.com/docs/auth/admin/verify-id-tokens
+- Cloudflare Workers KV: https://developers.cloudflare.com/kv/
+- Cloudflare Workers Secrets: https://developers.cloudflare.com/workers/configuration/secrets/

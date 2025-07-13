@@ -19,14 +19,24 @@ import { players, monsterSpecies, ownedMonsters } from '../db/schema';
 import type { データベース型 } from '../db/types';
 import { ロガー } from '../utils/logger';
 import { uuid生成 } from '../utils/uuid';
+import { firebaseAuthMiddleware } from '../middleware/firebase-auth';
 // import type { プレイヤー応答, プレイヤー一覧応答, エラー応答 } from '@monster-game/shared'; // 将来の実装で使用
+
+/**
+ * Firebase認証環境変数型定義
+ */
+interface AuthEnv {
+  AUTH_KV: KVNamespace;
+  FIREBASE_PROJECT_ID: string;
+  PUBLIC_JWK_CACHE_KEY: string;
+  JWT_CACHE_TTL: string;
+}
 
 // プレイヤー作成リクエストの検証スキーマ（Player creation request validation schema）
 const playerCreationSchema = z.object({
   /** プレイヤー名（Player name） */
   name: z.string().min(1, '名前は必須です').max(20, '名前は20文字以内で入力してください'),
-  /** Firebase認証UID（Firebase Authentication UID） */
-  firebaseUid: z.string().min(1, 'Firebase UIDは必須です'),
+  // Firebase UIDは認証ミドルウェアから取得するため、リクエストボディからは削除
 });
 
 // プレイヤー取得のパスパラメータ検証スキーマ（Player ID path parameter validation schema）
@@ -44,11 +54,13 @@ const playerIdSchema = z.object({
  *   （All database operations within this function are type-checked）
  * - IDEでオートコンプリートが効くようになる
  *   （Enable auto-completion in IDE）
+ * - Firebase認証ミドルウェアを統合
  * 
  * @param db - 型安全なデータベース接続インスタンス（Type-safe database connection instance）
+ * @param authEnv - Firebase認証に必要な環境変数
  * @returns Honoルーターインスタンス（Hono router instance）
  */
-export function playerRouter(db: データベース型) {
+export function playerRouter(db: データベース型, authEnv: AuthEnv) {
   const app = new Hono();
 
   /**
@@ -63,7 +75,14 @@ export function playerRouter(db: データベース型) {
    */
   app.post('/', zValidator('json', playerCreationSchema), async (c) => {
     try {
-      const { name, firebaseUid } = c.req.valid('json');
+      // Firebase認証チェック
+      const authResult = await firebaseAuthMiddleware(c.req.raw, authEnv);
+      if (!authResult.success) {
+        return authResult.response;
+      }
+
+      const { name } = c.req.valid('json');
+      const firebaseUid = authResult.user.uid; // 認証済みユーザーのUIDを使用
       
       // 一意IDを生成（Generate unique ID for CI environment compatibility）
       // nanoidはCI環境でCrypto APIエラーを起こすため、環境対応済みのuuid生成()を使用
@@ -148,6 +167,12 @@ export function playerRouter(db: データベース型) {
    */
   app.get('/:id', zValidator('param', playerIdSchema), async (c) => {
     try {
+      // Firebase認証チェック
+      const authResult = await firebaseAuthMiddleware(c.req.raw, authEnv);
+      if (!authResult.success) {
+        return authResult.response;
+      }
+
       const { id } = c.req.valid('param');
       
       // データベースからプレイヤーを検索（Search for player in database）
@@ -197,6 +222,12 @@ export function playerRouter(db: データベース型) {
    */
   app.get('/', async (c) => {
     try {
+      // Firebase認証チェック
+      const authResult = await firebaseAuthMiddleware(c.req.raw, authEnv);
+      if (!authResult.success) {
+        return authResult.response;
+      }
+
       // 全プレイヤーを取得（作成日時の降順）（Retrieve all players in descending order of creation time）
       const playerList = await db
         .select({

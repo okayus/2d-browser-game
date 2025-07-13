@@ -17,6 +17,24 @@
     }
   ],
   
+  // KV Namespace設定
+  // 初学者向けメモ：Firebase認証のJWT公開鍵キャッシュ用
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV", // Workers内でenv.AUTH_KVとしてアクセス可能
+      "id": "YOUR_KV_NAMESPACE_ID_HERE", // wrangler kv:namespace createで生成されるID
+      "preview_id": "YOUR_PREVIEW_KV_NAMESPACE_ID_HERE" // ローカル開発用のID
+    }
+  ],
+  
+  // 環境変数設定
+  // 初学者向けメモ：Firebase認証に必要な設定値
+  "vars": {
+    "FIREBASE_PROJECT_ID": "YOUR_FIREBASE_PROJECT_ID",
+    "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks",
+    "JWT_CACHE_TTL": "3600"
+  },
+  
   // 環境別設定
   "env": {
     // 開発環境設定
@@ -30,9 +48,19 @@
           "preview_database_id": "local-monster-game" // ローカル開発用の識別子
         }
       ],
+      "kv_namespaces": [
+        {
+          "binding": "AUTH_KV",
+          "id": "YOUR_DEV_KV_NAMESPACE_ID_HERE",
+          "preview_id": "YOUR_DEV_PREVIEW_KV_NAMESPACE_ID_HERE"
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "development",
-        "LOG_LEVEL": "debug"
+        "LOG_LEVEL": "debug",
+        "FIREBASE_PROJECT_ID": "YOUR_DEV_FIREBASE_PROJECT_ID",
+        "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks-dev",
+        "JWT_CACHE_TTL": "1800"
       }
     },
     
@@ -46,9 +74,18 @@
           "database_id": "YOUR_PROD_DATABASE_ID_HERE" // 本番用は別途作成
         }
       ],
+      "kv_namespaces": [
+        {
+          "binding": "AUTH_KV",
+          "id": "YOUR_PROD_KV_NAMESPACE_ID_HERE"
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "production",
-        "LOG_LEVEL": "error"
+        "LOG_LEVEL": "error",
+        "FIREBASE_PROJECT_ID": "YOUR_PROD_FIREBASE_PROJECT_ID",
+        "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks-prod",
+        "JWT_CACHE_TTL": "3600"
       }
     }
   },

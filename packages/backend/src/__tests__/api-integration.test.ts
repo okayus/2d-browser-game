@@ -18,6 +18,8 @@ import モンスターAPI from '../api/monster';
 import { 初期データ投入 } from '../db/seed';
 import type { データベース型 } from '../db/types';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
+import { vi } from 'vitest';
+import * as authModule from '../middleware/firebase-auth';
 
 // APIレスポンスの型定義（Updated to new schema）
 interface APIレスポンス<T = unknown> {
@@ -89,6 +91,19 @@ let testDb: Database.Database;
 let testD1Db: TestD1Database;
 let db: データベース型;
 
+// テスト用Firebase UID
+const TEST_FIREBASE_UID = 'test-firebase-uid-integration';
+
+// Firebase認証ミドルウェアをモック化
+const mockFirebaseAuthMiddleware = vi.fn().mockResolvedValue({
+  success: true,
+  user: {
+    uid: TEST_FIREBASE_UID,
+    email: 'test@example.com',
+    auth_time: Date.now() / 1000,
+  },
+});
+
 /**
  * テストデータベースのセットアップ
  * 
@@ -97,6 +112,9 @@ let db: データベース型;
  * - 各テスト実行前にクリーンな状態にリセット
  */
 beforeAll(async () => {
+  // Firebase認証ミドルウェアをモック化
+  vi.spyOn(authModule, 'firebaseAuthMiddleware').mockImplementation(mockFirebaseAuthMiddleware);
+
   // インメモリデータベースを作成
   testDb = new Database(':memory:');
   
@@ -150,13 +168,23 @@ beforeAll(async () => {
   app.use('/api/*', async (c, next) => {
     c.env = { 
       DB: testD1Db as unknown as D1Database,  // D1互換性のために保持
-      DRIZZLE_DB: db // 統合テスト用のDrizzleインスタンス
+      DRIZZLE_DB: db, // 統合テスト用のDrizzleインスタンス
+      // Firebase認証用の環境変数
+      AUTH_KV: {} as KVNamespace,
+      FIREBASE_PROJECT_ID: 'test-project',
+      PUBLIC_JWK_CACHE_KEY: 'test-jwk-key',
+      JWT_CACHE_TTL: '3600',
     };
     await next();
   });
 
   // APIルーターを設定
-  app.route('/api/players', playerRouter(db));
+  app.route('/api/players', playerRouter(db, {
+    AUTH_KV: {} as KVNamespace,
+    FIREBASE_PROJECT_ID: 'test-project',
+    PUBLIC_JWK_CACHE_KEY: 'test-jwk-key',
+    JWT_CACHE_TTL: '3600',
+  }));
   app.route('/api', モンスターAPI);
 });
 
@@ -188,7 +216,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       },
       body: JSON.stringify({
         name: 'テストプレイヤー',
-        firebaseUid: 'test-firebase-uid-001',
       }),
     });
 
@@ -199,7 +226,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(responseData.success).toBe(true);
     expect(responseData.message).toBe('プレイヤーが作成されました');
     expect(responseData.data?.name).toBe('テストプレイヤー');
-    expect(responseData.data?.firebaseUid).toBe('test-firebase-uid-001');
+    expect(responseData.data?.firebaseUid).toBe(TEST_FIREBASE_UID);
     expect(responseData.data?.initialMonster).toBeDefined();
     
     // 初期モンスターの検証
@@ -217,7 +244,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     
     expect(保存されたプレイヤー).toHaveLength(1);
     expect(保存されたプレイヤー[0]?.name).toBe('テストプレイヤー');
-    expect(保存されたプレイヤー[0]?.firebaseUid).toBe('test-firebase-uid-001');
+    expect(保存されたプレイヤー[0]?.firebaseUid).toBe(TEST_FIREBASE_UID);
 
     // 所持モンスター確認
     const 所持モンスター = await db
@@ -244,7 +271,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'モンスタートレーナー',
-        firebaseUid: 'test-firebase-uid-002'
       }),
     });
     
@@ -298,7 +324,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'コレクター',
-        firebaseUid: 'test-firebase-uid-003'
       }),
     });
     
@@ -350,7 +375,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'ニックネーマー',
-        firebaseUid: 'test-firebase-uid-004'
       }),
     });
     
@@ -394,7 +418,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'バリデーションテスター',
-        firebaseUid: 'test-firebase-uid-005'
       }),
     });
     
@@ -435,7 +458,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'リリーサー',
-        firebaseUid: 'test-firebase-uid-006'
       }),
     });
     
@@ -514,7 +536,6 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: '取得テストプレイヤー',
-        firebaseUid: 'test-firebase-uid-007'
       }),
     });
     

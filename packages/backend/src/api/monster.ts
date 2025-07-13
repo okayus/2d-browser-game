@@ -28,11 +28,18 @@ interface HTTPResponseType<T = unknown> {
 }
 import { ロガー } from '../utils/logger';
 import type { データベース型 } from '../db/types';
+import { firebaseAuthMiddleware } from '../middleware/firebase-auth';
 
 // APIの型定義
 type Env = {
   Bindings: {
     DB: D1Database;
+    AUTH_KV: KVNamespace;
+  };
+  Variables: {
+    FIREBASE_PROJECT_ID: string;
+    PUBLIC_JWK_CACHE_KEY: string;
+    JWT_CACHE_TTL: string;
   };
 };
 
@@ -82,6 +89,7 @@ const ニックネーム更新スキーマ = nicknameUpdateSchema;
  * POST /api/players/:playerId/monsters - モンスター獲得
  * 
  * 初学者向けメモ：
+ * - Firebase認証が必要
  * - プレイヤーの存在確認
  * - 種族マスタの存在確認
  * - 初期HPは種族の基礎HPと同じ
@@ -91,13 +99,25 @@ app.post(
   '/players/:playerId/monsters',
   zValidator('json', モンスター獲得スキーマ),
   async (c) => {
+    // Firebase認証チェック
+    const authResult = await firebaseAuthMiddleware(c.req.raw, {
+      AUTH_KV: c.env.AUTH_KV,
+      FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+    });
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
     // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
     const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { playerId } = c.req.param();
     const { speciesId } = c.req.valid('json');
+    const firebaseUid = authResult.user.uid;
 
     try {
-      // プレイヤーの存在確認
+      // プレイヤーの存在確認とFirebase UID照合
       const プレイヤー = await db
         .select()
         .from(schema.players)
@@ -113,6 +133,18 @@ app.post(
             message: 'プレイヤーが見つかりません',
           },
         }, 404);
+      }
+
+      // プレイヤーの所有権確認（Firebase UIDの照合）
+      if (プレイヤー.firebaseUid !== firebaseUid) {
+        ロガー.警告('認証されていないプレイヤーへのモンスター獲得試行', { playerId, firebaseUid });
+        return c.json<HTTPResponseType>({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'このプレイヤーへの操作権限がありません',
+          },
+        }, 403);
       }
 
       // 種族の存在確認
@@ -205,6 +237,7 @@ app.post(
  * GET /api/players/:playerId/monsters - モンスター一覧取得
  * 
  * 初学者向けメモ：
+ * - Firebase認証が必要
  * - プレイヤーが所持するモンスターのみ取得
  * - 種族情報も一緒に取得（JOIN）
  * - ソート・フィルタリング対応
@@ -213,12 +246,51 @@ app.get(
   '/players/:playerId/monsters',
   zValidator('query', モンスター一覧クエリスキーマ),
   async (c) => {
+    // Firebase認証チェック
+    const authResult = await firebaseAuthMiddleware(c.req.raw, {
+      AUTH_KV: c.env.AUTH_KV,
+      FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+    });
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
     // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
     const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { playerId } = c.req.param();
     const { order, speciesId } = c.req.valid('query');
+    const firebaseUid = authResult.user.uid;
 
     try {
+      // プレイヤーの存在確認とFirebase UID照合
+      const プレイヤー = await db
+        .select()
+        .from(schema.players)
+        .where(eq(schema.players.id, playerId))
+        .get();
+
+      if (!プレイヤー) {
+        return c.json<HTTPResponseType>({
+          success: false,
+          error: {
+            code: 'PLAYER_NOT_FOUND',
+            message: 'プレイヤーが見つかりません',
+          },
+        }, 404);
+      }
+
+      // プレイヤーの所有権確認（Firebase UIDの照合）
+      if (プレイヤー.firebaseUid !== firebaseUid) {
+        return c.json<HTTPResponseType>({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'このプレイヤーのモンスター情報へのアクセス権限がありません',
+          },
+        }, 403);
+      }
       // 基本のクエリを構築
       const whereConditions = [eq(schema.ownedMonsters.playerId, playerId)];
       
@@ -283,6 +355,7 @@ app.get(
  * PUT /api/monsters/:monsterId - ニックネーム変更
  * 
  * 初学者向けメモ：
+ * - Firebase認証が必要
  * - モンスターの所有者確認
  * - 他人のモンスターは変更不可
  * - ニックネームのバリデーション
@@ -291,20 +364,36 @@ app.put(
   '/monsters/:monsterId',
   zValidator('json', ニックネーム更新スキーマ),
   async (c) => {
+    // Firebase認証チェック
+    const authResult = await firebaseAuthMiddleware(c.req.raw, {
+      AUTH_KV: c.env.AUTH_KV,
+      FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+    });
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
     // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
     const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { monsterId } = c.req.param();
     const { nickname } = c.req.valid('json');
+    const firebaseUid = authResult.user.uid;
 
     try {
-      // モンスターの存在確認
-      const モンスター = await db
-        .select()
+      // モンスターの存在確認と所有者の確認
+      const モンスター情報 = await db
+        .select({
+          monster: schema.ownedMonsters,
+          player: schema.players,
+        })
         .from(schema.ownedMonsters)
+        .leftJoin(schema.players, eq(schema.ownedMonsters.playerId, schema.players.id))
         .where(eq(schema.ownedMonsters.id, monsterId))
         .get();
 
-      if (!モンスター) {
+      if (!モンスター情報 || !モンスター情報.monster) {
         return c.json<HTTPResponseType>({
           success: false,
           error: {
@@ -313,6 +402,19 @@ app.put(
           },
         }, 404);
       }
+
+      // プレイヤーの所有権確認（Firebase UIDの照合）
+      if (!モンスター情報.player || モンスター情報.player.firebaseUid !== firebaseUid) {
+        return c.json<HTTPResponseType>({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'このモンスターの変更権限がありません',
+          },
+        }, 403);
+      }
+
+      const モンスター = モンスター情報.monster;
 
       // ニックネーム更新
       await db
@@ -353,24 +455,41 @@ app.put(
  * DELETE /api/monsters/:monsterId - モンスター解放
  * 
  * 初学者向けメモ：
+ * - Firebase認証が必要
  * - 物理削除を実行
  * - 復元不可なので注意
  * - 将来的には論理削除も検討
  */
 app.delete('/monsters/:monsterId', async (c) => {
+  // Firebase認証チェック
+  const authResult = await firebaseAuthMiddleware(c.req.raw, {
+    AUTH_KV: c.env.AUTH_KV,
+    FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
+    PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
+    JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+  });
+  if (!authResult.success) {
+    return authResult.response;
+  }
+
   // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成
   const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
   const { monsterId } = c.req.param();
+  const firebaseUid = authResult.user.uid;
 
   try {
-    // モンスターの存在確認
-    const モンスター = await db
-      .select()
+    // モンスターの存在確認と所有者の確認
+    const モンスター情報 = await db
+      .select({
+        monster: schema.ownedMonsters,
+        player: schema.players,
+      })
       .from(schema.ownedMonsters)
+      .leftJoin(schema.players, eq(schema.ownedMonsters.playerId, schema.players.id))
       .where(eq(schema.ownedMonsters.id, monsterId))
       .get();
 
-    if (!モンスター) {
+    if (!モンスター情報 || !モンスター情報.monster) {
       return c.json<HTTPResponseType>({
         success: false,
         error: {
@@ -379,6 +498,19 @@ app.delete('/monsters/:monsterId', async (c) => {
         },
       }, 404);
     }
+
+    // プレイヤーの所有権確認（Firebase UIDの照合）
+    if (!モンスター情報.player || モンスター情報.player.firebaseUid !== firebaseUid) {
+      return c.json<HTTPResponseType>({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'このモンスターの削除権限がありません',
+        },
+      }, 403);
+    }
+
+    const モンスター = モンスター情報.monster;
 
     // モンスター削除
     await db
@@ -428,8 +560,9 @@ export default app;
  *    - ログ出力で問題追跡
  * 
  * 4. セキュリティ
+ *    - Firebase認証によるユーザー識別
  *    - プレイヤーIDの検証
- *    - 所有権の確認
+ *    - Firebase UIDによる所有権確認
  *    - SQLインジェクション対策（ORMで自動）
  * 
  * 5. パフォーマンス

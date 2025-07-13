@@ -13,12 +13,16 @@ import { drizzle } from 'drizzle-orm/d1';
 import * as schema from './db/schema';
 import { データベース初期化 } from './db/migration';
 import { ロガー } from './utils/logger';
-import { プレイヤールーター } from './api/player';
+import { playerRouter } from './api/player';
 import モンスターAPI from './api/monster';
 
 // Cloudflare Workers の環境変数型定義
 type Bindings = {
   DB: D1Database; // D1データベース
+  AUTH_KV?: KVNamespace; // Firebase認証用KV
+  FIREBASE_PROJECT_ID?: string; // FirebaseプロジェクトID
+  PUBLIC_JWK_CACHE_KEY?: string; // JWT公開鍵キャッシュキー
+  JWT_CACHE_TTL?: string; // JWTキャッシュTTL
 }
 
 // Honoアプリケーションの作成
@@ -80,7 +84,12 @@ app.route('/api/players', (() => {
   // 全てのプレイヤーエンドポイント
   プレイヤーApp.all('/*', async (c) => {
     const db = drizzle(c.env.DB, { schema });
-    const router = プレイヤールーター(db);
+    const router = playerRouter(db, {
+      AUTH_KV: c.env.AUTH_KV!,
+      FIREBASE_PROJECT_ID: c.env.FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: c.env.PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: c.env.JWT_CACHE_TTL || '',
+    });
     return router.fetch(c.req.raw, c.env);
   });
   
