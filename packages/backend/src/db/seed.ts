@@ -96,7 +96,7 @@ export async function 初期データ投入(db: データベース型) {
     console.log('初期データの投入が完了しました！');
     
     // 投入結果の確認
-    const 投入済み種族 = await db.select().from(schema.モンスター種族);
+    const 投入済み種族 = await db.select().from(schema.monsterSpecies);
     console.log(`合計 ${投入済み種族.length} 種類のモンスターを登録しました`);
     
   } catch (error) {
@@ -118,9 +118,9 @@ export async function データリセット(db: データベース型) {
   
   try {
     // 外部キー制約の順序を考慮して削除
-    await db.delete(schema.所持モンスター);
-    await db.delete(schema.モンスター種族);
-    await db.delete(schema.プレイヤー);
+    await db.delete(schema.ownedMonsters);
+    await db.delete(schema.monsterSpecies);
+    await db.delete(schema.players);
     
     console.log('✅ データベースのリセットが完了しました');
   } catch (error) {
