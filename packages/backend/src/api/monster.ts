@@ -77,7 +77,6 @@ const nicknameUpdateSchema = z.object({
 const モンスター獲得スキーマ = monsterAcquisitionSchema;
 const モンスター一覧クエリスキーマ = monsterListQuerySchema;
 const ニックネーム更新スキーマ = nicknameUpdateSchema;
-type HTTPレスポンス型<T = unknown> = HTTPResponseType<T>;
 
 /**
  * POST /api/players/:playerId/monsters - モンスター獲得
