@@ -5,6 +5,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllMonsters, getGameState, updateGameState, type MonsterType } from '../lib/utils'
+import { useAuth } from '../contexts/AuthContext'
+import { usePlayer } from '../hooks/usePlayer'
 
 /**
  * プレイヤー作成画面のメインコンポーネント
@@ -12,6 +14,10 @@ import { getAllMonsters, getGameState, updateGameState, type MonsterType } from 
  */
 export function PlayerCreationPage() {
   const navigate = useNavigate()
+  
+  // 認証状態とプレイヤー管理
+  const { currentUser } = useAuth()
+  const { createPlayer, isLoading: playerLoading, error: playerError } = usePlayer()
   
   // 状態管理
   const [playerName, setPlayerName] = useState('')

@@ -22,15 +22,15 @@
   "kv_namespaces": [
     {
       "binding": "AUTH_KV", // Workers内でenv.AUTH_KVとしてアクセス可能
-      "id": "YOUR_KV_NAMESPACE_ID_HERE", // wrangler kv:namespace createで生成されるID
-      "preview_id": "YOUR_PREVIEW_KV_NAMESPACE_ID_HERE" // ローカル開発用のID
+      "id": "429001581b7e442cb8e600bc6b6485d2", // 本番用KV Namespace ID
+      "preview_id": "f0254456ad6f494c809c17b38df7231e" // プレビュー用KV Namespace ID
     }
   ],
   
   // 環境変数設定
   // 初学者向けメモ：Firebase認証に必要な設定値
   "vars": {
-    "FIREBASE_PROJECT_ID": "YOUR_FIREBASE_PROJECT_ID",
+    "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
     "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks",
     "JWT_CACHE_TTL": "3600"
   },
@@ -51,14 +51,14 @@
       "kv_namespaces": [
         {
           "binding": "AUTH_KV",
-          "id": "YOUR_DEV_KV_NAMESPACE_ID_HERE",
-          "preview_id": "YOUR_DEV_PREVIEW_KV_NAMESPACE_ID_HERE"
+          "id": "429001581b7e442cb8e600bc6b6485d2",
+          "preview_id": "f0254456ad6f494c809c17b38df7231e"
         }
       ],
       "vars": {
         "ENVIRONMENT": "development",
         "LOG_LEVEL": "debug",
-        "FIREBASE_PROJECT_ID": "YOUR_DEV_FIREBASE_PROJECT_ID",
+        "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
         "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks-dev",
         "JWT_CACHE_TTL": "1800"
       }
@@ -77,13 +77,13 @@
       "kv_namespaces": [
         {
           "binding": "AUTH_KV",
-          "id": "YOUR_PROD_KV_NAMESPACE_ID_HERE"
+          "id": "429001581b7e442cb8e600bc6b6485d2"
         }
       ],
       "vars": {
         "ENVIRONMENT": "production",
         "LOG_LEVEL": "error",
-        "FIREBASE_PROJECT_ID": "YOUR_PROD_FIREBASE_PROJECT_ID",
+        "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
         "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks-prod",
         "JWT_CACHE_TTL": "3600"
       }
