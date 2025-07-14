@@ -156,3 +156,9 @@ ehthumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Log files
+*.log
+server.log
+frontend.log
+build.log

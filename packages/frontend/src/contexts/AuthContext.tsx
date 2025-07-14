@@ -144,8 +144,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      setError(getJapaneseErrorMessage(error.code));
+    } catch (error: unknown) {
+      const errorCode = error && typeof error === 'object' && 'code' in error ? error.code as string : 'unknown';
+      setError(getJapaneseErrorMessage(errorCode));
       throw error;
     } finally {
       setLoading(false);
@@ -164,8 +165,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
       await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      setError(getJapaneseErrorMessage(error.code));
+    } catch (error: unknown) {
+      const errorCode = error && typeof error === 'object' && 'code' in error ? error.code as string : 'unknown';
+      setError(getJapaneseErrorMessage(errorCode));
       throw error;
     } finally {
       setLoading(false);
@@ -189,8 +191,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         prompt: 'select_account'
       });
       await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      setError(getJapaneseErrorMessage(error.code));
+    } catch (error: unknown) {
+      const errorCode = error && typeof error === 'object' && 'code' in error ? error.code as string : 'unknown';
+      setError(getJapaneseErrorMessage(errorCode));
       throw error;
     } finally {
       setLoading(false);
@@ -208,8 +211,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       await signOut(auth);
-    } catch (error: any) {
-      setError(getJapaneseErrorMessage(error.code));
+    } catch (error: unknown) {
+      const errorCode = error && typeof error === 'object' && 'code' in error ? error.code as string : 'unknown';
+      setError(getJapaneseErrorMessage(errorCode));
       throw error;
     }
   };
@@ -225,8 +229,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       await sendPasswordResetEmail(auth, email);
-    } catch (error: any) {
-      setError(getJapaneseErrorMessage(error.code));
+    } catch (error: unknown) {
+      const errorCode = error && typeof error === 'object' && 'code' in error ? error.code as string : 'unknown';
+      setError(getJapaneseErrorMessage(errorCode));
       throw error;
     }
   };

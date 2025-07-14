@@ -80,33 +80,43 @@ export function useMonsters(): UseMonstersReturn {
       
       if (response.success && response.data) {
         // APIレスポンスをOwnedMonster形式に変換
-        const monstersData = Array.isArray(response.data) ? response.data : (response.data as any).monsters || [];
-        const ownedMonsters: OwnedMonster[] = monstersData.map((monster: any) => {
-          const species = getSpeciesInfo(monster.speciesId)
+        const monstersData = Array.isArray(response.data) ? response.data : (response.data as { monsters?: unknown[] }).monsters || [];
+        const ownedMonsters: OwnedMonster[] = monstersData.map((monster: unknown) => {
+          const monsterData = monster as {
+            id: string;
+            speciesId: string;
+            name: string;
+            level: number;
+            experiencePoints: number;
+            hitPoints: number;
+            maxHitPoints: number;
+            createdAt: string;
+          };
+          const species = getSpeciesInfo(monsterData.speciesId)
           
           if (!species) {
-            console.warn(`未知の種族ID: ${monster.speciesId}`)
+            console.warn(`未知の種族ID: ${monsterData.speciesId}`)
             // デフォルトの種族情報を設定
             return {
-              id: monster.id,
-              playerId: monster.playerId,
-              speciesId: monster.speciesId,
-              nickname: monster.nickname || '',
-              currentHp: monster.currentHp,
-              maxHp: monster.maxHp,
-              capturedAt: monster.capturedAt,
+              id: monsterData.id,
+              playerId: playerId,
+              speciesId: monsterData.speciesId,
+              nickname: monsterData.name,
+              currentHp: monsterData.hitPoints,
+              maxHp: monsterData.maxHitPoints,
+              capturedAt: monsterData.createdAt,
               species: MONSTER_TYPES[0] // フォールバック
             }
           }
           
           return {
-            id: monster.id,
-            playerId: monster.playerId,
-            speciesId: monster.speciesId,
-            nickname: monster.nickname || '',
-            currentHp: monster.currentHp,
-            maxHp: monster.maxHp,
-            capturedAt: monster.capturedAt,
+            id: monsterData.id,
+            playerId: playerId,
+            speciesId: monsterData.speciesId,
+            nickname: monsterData.name,
+            currentHp: monsterData.hitPoints,
+            maxHp: monsterData.maxHitPoints,
+            capturedAt: monsterData.createdAt,
             species
           }
         })

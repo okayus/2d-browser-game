@@ -7,7 +7,6 @@
  * - TypeScriptで型安全なAPI通信を実現
  */
 
-import { User } from 'firebase/auth';
 import { auth } from './firebase';
 
 /**
@@ -17,7 +16,7 @@ import { auth } from './firebase';
  * - バックエンドAPIのレスポンス形式に合わせた型定義
  * - 成功時はdata、失敗時はerrorプロパティを使用
  */
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -35,7 +34,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public message: string,
-    public response?: any
+    public response?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
@@ -72,7 +71,7 @@ const getAuthToken = async (): Promise<string | null> => {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   requireAuth?: boolean; // 認証が必要かどうか
 }
 
@@ -84,7 +83,7 @@ interface RequestOptions {
  * - 認証ヘッダーの自動付与
  * - エラーハンドリングとレスポンス解析を一元化
  */
-const apiRequest = async <T = any>(
+const apiRequest = async <T = unknown>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> => {

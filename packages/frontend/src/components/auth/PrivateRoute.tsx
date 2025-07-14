@@ -93,7 +93,7 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({
  * - useAuthのラッパーとして使用可能
  */
 export const useRequireAuth = (): {
-  currentUser: any;
+  currentUser: import('firebase/auth').User | null;
   loading: boolean;
   isAuthenticated: boolean;
 } => {
@@ -114,7 +114,7 @@ export const useRequireAuth = (): {
  * - ユーザーフレンドリーなエラーメッセージを表示
  */
 export const checkAuthBeforeAction = (
-  currentUser: any,
+  currentUser: import('firebase/auth').User | null,
   actionName: string = '操作'
 ): boolean => {
   if (!currentUser) {
@@ -137,8 +137,6 @@ interface AdminRouteProps extends PrivateRouteProps {
 
 export const AdminRoute: React.FC<AdminRouteProps> = ({ 
   children, 
-  redirectTo = '/unauthorized',
-  requiredRole = 'admin',
   fallback 
 }) => {
   const { currentUser, loading } = useAuth();

@@ -4,7 +4,7 @@
  */
 import { Routes, Route } from 'react-router-dom'
 import { StartPage, LoginPage, RegisterPage, PlayerCreationPage, MapPage, MonsterListPage } from './pages'
-import { PrivateRoute, Header } from './components'
+import { PrivateRoute, Header, AuthDebugTool } from './components'
 
 /**
  * アプリケーションのメインコンポーネント
@@ -15,6 +15,9 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* グローバルヘッダー */}
       <Header />
+      
+      {/* 開発環境用認証デバッグツール */}
+      <AuthDebugTool />
       
       {/* メインコンテンツ */}
       <main>

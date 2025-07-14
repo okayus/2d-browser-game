@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { validatePlayerName, getStorageData, setStorageData } from '../lib/utils'
+import { getStorageData } from '../lib/utils'
 import { usePlayer } from '../hooks'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -20,7 +20,7 @@ export function StartPage() {
   const { currentUser, loading: authLoading, logout } = useAuth()
   
   // プレイヤー管理フック
-  const { isLoading: playerLoading, error: playerError, createPlayer, getPlayer, clearError } = usePlayer()
+  const { error: playerError, clearError } = usePlayer()
   
   // コンポーネントの状態管理
   const [success, setSuccess] = useState('')
@@ -28,7 +28,6 @@ export function StartPage() {
   
   // エラーは usePlayer フックから取得
   const error = playerError
-  const isLoading = playerLoading || authLoading
 
   /**
    * コンポーネント初期化時の処理
@@ -109,6 +108,22 @@ export function StartPage() {
     }
   }
 
+  // デバッグ情報をコンソールに出力
+  React.useEffect(() => {
+    console.log('StartPage Debug Info:', {
+      currentUser: currentUser ? {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        emailVerified: currentUser.emailVerified
+      } : null,
+      authLoading,
+      hasExistingGame,
+      gameState: getStorageData<string>('game_state', 'start'),
+      selectedMonster: getStorageData('selected_monster'),
+      pathname: location.pathname
+    })
+  }, [currentUser, authLoading, hasExistingGame])
+
   // 認証状態の確認
   if (authLoading) {
     return (
@@ -187,6 +202,13 @@ export function StartPage() {
               ) : (
                 <Link
                   to="/player-creation"
+                  onClick={() => {
+                    console.log('ゲーム開始ボタンクリック:', {
+                      currentUser: currentUser?.email,
+                      targetPath: '/player-creation',
+                      hasExistingGame
+                    })
+                  }}
                   className="w-full py-4 px-6 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center"
                 >
                   <span className="inline-flex items-center space-x-2">
