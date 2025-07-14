@@ -3,7 +3,7 @@
   // 初学者向けメモ：jsonc形式でコメントが書けるため、より分かりやすい設定が可能
   
   "name": "monster-game-backend",
-  "main": "src/index.minimal.ts",
+  "main": "src/index.ts",
   "compatibility_date": "2024-01-01",
   
   // D1データベース設定
@@ -92,6 +92,7 @@
   
   // Node.js互換性設定
   // 初学者向けメモ：wrangler v4からはcompatibility_flagsを使用
+  // "nodejs_compat": Node.jsモジュールの一部をサポート
   "compatibility_flags": ["nodejs_compat"],
   
   // ビルド設定

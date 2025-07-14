@@ -10,14 +10,10 @@
 import type { Config } from 'drizzle-kit';
 
 export default {
-  schema: './src/db/スキーマ.ts', // スキーマ定義ファイルのパス
+  schema: './src/db/schema.ts', // スキーマ定義ファイルのパス
   out: './migrations', // マイグレーションファイルの出力先
-  driver: 'd1', // Cloudflare D1データベースを使用
-  dbCredentials: {
-    // 初学者向けメモ：wrangler.jsoncから設定を読み込む
-    wranglerConfigPath: './wrangler.jsonc',
-    dbName: 'monster-game-dev',
-  },
+  dialect: 'sqlite', // SQLite方言を使用（D1互換）
+  driver: 'better-sqlite', // ローカル開発用
 } satisfies Config;
 
 /**
