@@ -13,51 +13,54 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema';
-import { プレイヤールーター } from '../api/player';
+import { playerRouter } from '../api/player';
 import モンスターAPI from '../api/monster';
 import { 初期データ投入 } from '../db/seed';
 import type { データベース型 } from '../db/types';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
+import { vi } from 'vitest';
+import * as authModule from '../middleware/firebase-auth';
 
-// APIレスポンスの型定義
+// APIレスポンスの型定義（Updated to new schema）
 interface APIレスポンス<T = unknown> {
-  成功: boolean;
-  メッセージ?: string;
-  データ?: T;
-  件数?: number;
-  エラー?: {
-    コード: string;
-    メッセージ: string;
+  success: boolean;
+  message?: string;
+  data?: T;
+  count?: number;
+  error?: {
+    code: string;
+    message: string;
   };
 }
 
-// プレイヤー作成レスポンスの型定義
+// プレイヤー作成レスポンスの型定義（Updated to new schema）
 interface プレイヤー作成データ型 {
   id: string;
-  名前: string;
-  作成日時: string;
-  初期モンスター: {
+  name: string;
+  firebaseUid: string;
+  createdAt: string;
+  initialMonster: {
     id: string;
-    種族名: string;
-    ニックネーム: string;
-    現在HP: number;
-    最大HP: number;
+    speciesName: string;
+    nickname: string;
+    currentHp: number;
+    maxHp: number;
   } | null;
 }
 
-// モンスター獲得レスポンスの型定義
+// モンスター獲得レスポンスの型定義（Updated to new schema）
 interface モンスター獲得データ型 {
   id: string;
-  プレイヤーID: string;
-  種族: {
+  playerId: string;
+  species: {
     id: string;
-    名前: string;
-    基礎HP: number;
+    name: string;
+    baseHp: number;
   };
-  ニックネーム: string;
-  現在HP: number;
-  最大HP: number;
-  捕獲日時: string;
+  nickname: string;
+  currentHp: number;
+  maxHp: number;
+  capturedAt: string;
 }
 
 // モンスター一覧データの型定義
@@ -77,8 +80,9 @@ interface モンスター一覧データ型 {
 // プレイヤー取得データの型定義
 interface プレイヤー取得データ型 {
   id: string;
-  名前: string;
-  作成日時: string;
+  name: string;
+  firebaseUid: string;
+  createdAt: string;
 }
 
 // テスト用のHonoアプリケーション設定
@@ -86,6 +90,19 @@ const app = new Hono();
 let testDb: Database.Database;
 let testD1Db: TestD1Database;
 let db: データベース型;
+
+// テスト用Firebase UID
+const TEST_FIREBASE_UID = 'test-firebase-uid-integration';
+
+// Firebase認証ミドルウェアをモック化
+const mockFirebaseAuthMiddleware = vi.fn().mockResolvedValue({
+  success: true,
+  user: {
+    uid: TEST_FIREBASE_UID,
+    email: 'test@example.com',
+    auth_time: Date.now() / 1000,
+  },
+});
 
 /**
  * テストデータベースのセットアップ
@@ -95,6 +112,9 @@ let db: データベース型;
  * - 各テスト実行前にクリーンな状態にリセット
  */
 beforeAll(async () => {
+  // Firebase認証ミドルウェアをモック化
+  vi.spyOn(authModule, 'firebaseAuthMiddleware').mockImplementation(mockFirebaseAuthMiddleware);
+
   // インメモリデータベースを作成
   testDb = new Database(':memory:');
   
@@ -104,11 +124,12 @@ beforeAll(async () => {
   // Drizzle ORM インスタンス作成
   db = drizzle(testDb, { schema }) as unknown as データベース型;
 
-  // テーブル作成（本来はマイグレーションで実行）
+  // テーブル作成（本来はマイグレーションで実行）- 新スキーマ対応
   testDb.exec(`
     CREATE TABLE IF NOT EXISTS players (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      firebase_uid TEXT UNIQUE,
       created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
       updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
     );
@@ -147,13 +168,23 @@ beforeAll(async () => {
   app.use('/api/*', async (c, next) => {
     c.env = { 
       DB: testD1Db as unknown as D1Database,  // D1互換性のために保持
-      DRIZZLE_DB: db // 統合テスト用のDrizzleインスタンス
+      DRIZZLE_DB: db, // 統合テスト用のDrizzleインスタンス
+      // Firebase認証用の環境変数
+      AUTH_KV: {} as KVNamespace,
+      FIREBASE_PROJECT_ID: 'test-project',
+      PUBLIC_JWK_CACHE_KEY: 'test-jwk-key',
+      JWT_CACHE_TTL: '3600',
     };
     await next();
   });
 
   // APIルーターを設定
-  app.route('/api/players', プレイヤールーター(db));
+  app.route('/api/players', playerRouter(db, {
+    AUTH_KV: {} as KVNamespace,
+    FIREBASE_PROJECT_ID: 'test-project',
+    PUBLIC_JWK_CACHE_KEY: 'test-jwk-key',
+    JWT_CACHE_TTL: '3600',
+  }));
   app.route('/api', モンスターAPI);
 });
 
@@ -163,8 +194,8 @@ afterAll(() => {
 
 beforeEach(async () => {
   // 各テスト前にプレイヤーと所持モンスターデータをリセット
-  await db.delete(schema.所持モンスター);
-  await db.delete(schema.プレイヤー);
+  await db.delete(schema.ownedMonsters);
+  await db.delete(schema.players);
 });
 
 describe('API統合テスト: プレイヤーとモンスター管理', () => {
@@ -177,14 +208,14 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
    * - 初期モンスターが付与されていることを確認
    */
   it('プレイヤー作成時に初期モンスターが付与される', async () => {
-    // プレイヤー作成リクエスト
+    // プレイヤー作成リクエスト（新スキーマ：Firebase UID必須）
     const response = await app.request('/api/players', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        名前: 'テストプレイヤー',
+        name: 'テストプレイヤー',
       }),
     });
 
@@ -192,35 +223,37 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(response.status).toBe(201);
     const responseData = await response.json() as APIレスポンス<プレイヤー作成データ型>;
     
-    expect(responseData.成功).toBe(true);
-    expect(responseData.メッセージ).toBe('プレイヤーが作成されました');
-    expect(responseData.データ?.名前).toBe('テストプレイヤー');
-    expect(responseData.データ?.初期モンスター).toBeDefined();
+    expect(responseData.success).toBe(true);
+    expect(responseData.message).toBe('プレイヤーが作成されました');
+    expect(responseData.data?.name).toBe('テストプレイヤー');
+    expect(responseData.data?.firebaseUid).toBe(TEST_FIREBASE_UID);
+    expect(responseData.data?.initialMonster).toBeDefined();
     
     // 初期モンスターの検証
-    const 初期モンスター = responseData.データ?.初期モンスター;
-    expect(初期モンスター).not.toBeNull();
-    expect(['でんきネズミ', 'ほのおトカゲ', 'くさモグラ']).toContain(初期モンスター?.種族名);
-    expect(初期モンスター?.現在HP).toBeGreaterThan(0);
-    expect(初期モンスター?.最大HP).toBeGreaterThan(0);
+    const initialMonster = responseData.data?.initialMonster;
+    expect(initialMonster).not.toBeNull();
+    expect(['でんきネズミ', 'ほのおトカゲ', 'くさモグラ']).toContain(initialMonster?.speciesName);
+    expect(initialMonster?.currentHp).toBeGreaterThan(0);
+    expect(initialMonster?.maxHp).toBeGreaterThan(0);
 
     // データベース確認
     const 保存されたプレイヤー = await db
       .select()
-      .from(schema.プレイヤー)
-      .where(eq(schema.プレイヤー.id, responseData.データ?.id ?? ''));
+      .from(schema.players)
+      .where(eq(schema.players.id, responseData.data?.id ?? ''));
     
     expect(保存されたプレイヤー).toHaveLength(1);
-    expect(保存されたプレイヤー[0]?.名前).toBe('テストプレイヤー');
+    expect(保存されたプレイヤー[0]?.name).toBe('テストプレイヤー');
+    expect(保存されたプレイヤー[0]?.firebaseUid).toBe(TEST_FIREBASE_UID);
 
     // 所持モンスター確認
     const 所持モンスター = await db
       .select()
-      .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.プレイヤーid, responseData.データ?.id ?? ''));
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.playerId, responseData.data?.id ?? ''));
     
     expect(所持モンスター).toHaveLength(1);
-    expect(所持モンスター[0]?.id).toBe(初期モンスター?.id);
+    expect(所持モンスター[0]?.id).toBe(initialMonster?.id);
   });
 
   /**
@@ -236,39 +269,41 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const プレイヤー作成Response = await app.request('/api/players', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 名前: 'モンスタートレーナー' }),
+      body: JSON.stringify({ 
+        name: 'モンスタートレーナー',
+      }),
     });
     
     const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
-    const プレイヤーId = プレイヤーData.データ!.id;
+    const プレイヤーId = プレイヤーData.data!.id;
 
     // 2. 種族情報取得（みずガメを獲得）
-    const 種族一覧 = await db.select().from(schema.モンスター種族);
-    const みずガメ種族 = 種族一覧.find(s => s.名前 === 'みずガメ');
+    const 種族一覧 = await db.select().from(schema.monsterSpecies);
+    const みずガメ種族 = 種族一覧.find(s => s.name === 'みずガメ');
     expect(みずガメ種族).toBeDefined();
 
     // 3. モンスター獲得
     const 獲得Response = await app.request(`/api/players/${プレイヤーId}/monsters`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 種族ID: みずガメ種族!.id }),
+      body: JSON.stringify({ speciesId: みずガメ種族!.id }),
     });
 
     // レスポンス検証
     expect(獲得Response.status).toBe(201);
     const 獲得Data = await 獲得Response.json() as APIレスポンス<モンスター獲得データ型>;
     
-    expect(獲得Data.成功).toBe(true);
-    expect(獲得Data.データ!.種族.名前).toBe('みずガメ');
-    expect(獲得Data.データ!.ニックネーム).toBe('みずガメ'); // デフォルトは種族名
-    expect(獲得Data.データ!.現在HP).toBe(45); // みずガメの基本HP
-    expect(獲得Data.データ!.最大HP).toBe(45);
+    expect(獲得Data.success).toBe(true);
+    expect(獲得Data.data!.species.name).toBe('みずガメ');
+    expect(獲得Data.data!.nickname).toBe('みずガメ'); // デフォルトは種族名
+    expect(獲得Data.data!.currentHp).toBe(45); // みずガメの基本HP
+    expect(獲得Data.data!.maxHp).toBe(45);
 
     // データベース確認
     const 所持モンスター = await db
       .select()
-      .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.プレイヤーid, プレイヤーId));
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.playerId, プレイヤーId));
     
     // 初期モンスター + 新規獲得で2体
     expect(所持モンスター).toHaveLength(2);
@@ -287,20 +322,22 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const プレイヤー作成Response = await app.request('/api/players', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 名前: 'コレクター' }),
+      body: JSON.stringify({ 
+        name: 'コレクター',
+      }),
     });
     
     const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
-    const プレイヤーId = プレイヤーData.データ!.id;
+    const プレイヤーId = プレイヤーData.data!.id;
 
     // 2. 追加でモンスターを獲得
-    const 種族一覧 = await db.select().from(schema.モンスター種族);
-    const いわゴーレム種族 = 種族一覧.find(s => s.名前 === 'いわゴーレム');
+    const 種族一覧 = await db.select().from(schema.monsterSpecies);
+    const いわゴーレム種族 = 種族一覧.find(s => s.name === 'いわゴーレム');
     
     await app.request(`/api/players/${プレイヤーId}/monsters`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 種族ID: いわゴーレム種族!.id }),
+      body: JSON.stringify({ speciesId: いわゴーレム種族!.id }),
     });
 
     // 3. モンスター一覧取得
@@ -309,12 +346,12 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(一覧Response.status).toBe(200);
     const 一覧Data = await 一覧Response.json() as APIレスポンス<モンスター一覧データ型[]>;
     
-    expect(一覧Data.成功).toBe(true);
-    expect(一覧Data.件数).toBe(2); // 初期 + 追加獲得
-    expect(一覧Data.データ).toHaveLength(2);
+    expect(一覧Data.success).toBe(true);
+    expect(一覧Data.count).toBe(2); // 初期 + 追加獲得
+    expect(一覧Data.data).toHaveLength(2);
     
     // 各モンスターの情報確認
-    一覧Data.データ!.forEach((monster: モンスター一覧データ型) => {
+    一覧Data.data!.forEach((monster: モンスター一覧データ型) => {
       expect(monster.id).toBeDefined();
       expect(monster.ニックネーム).toBeDefined();
       expect(monster.種族.名前).toBeDefined();
@@ -336,32 +373,34 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const プレイヤー作成Response = await app.request('/api/players', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 名前: 'ニックネーマー' }),
+      body: JSON.stringify({ 
+        name: 'ニックネーマー',
+      }),
     });
     
     const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
-    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
+    const 初期モンスター = プレイヤーData.data!.initialMonster;
 
     // 2. ニックネーム変更
     const 変更Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ニックネーム: 'ピカチュウ' }),
+      body: JSON.stringify({ nickname: 'ピカチュウ' }),
     });
 
     expect(変更Response.status).toBe(200);
-    const 変更Data = await 変更Response.json() as APIレスポンス<{ ニックネーム: string }>;
+    const 変更Data = await 変更Response.json() as APIレスポンス<{ nickname: string }>;
     
-    expect(変更Data.成功).toBe(true);
-    expect(変更Data.データ!.ニックネーム).toBe('ピカチュウ');
+    expect(変更Data.success).toBe(true);
+    expect(変更Data.data!.nickname).toBe('ピカチュウ');
 
     // データベース確認
     const 更新されたモンスター = await db
       .select()
-      .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.id, 初期モンスター!.id));
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.id, 初期モンスター!.id));
     
-    expect(更新されたモンスター[0]?.ニックネーム).toBe('ピカチュウ');
+    expect(更新されたモンスター[0]?.nickname).toBe('ピカチュウ');
   });
 
   /**
@@ -377,17 +416,19 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const プレイヤー作成Response = await app.request('/api/players', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 名前: 'バリデーションテスター' }),
+      body: JSON.stringify({ 
+        name: 'バリデーションテスター',
+      }),
     });
     
     const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
-    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
+    const 初期モンスター = プレイヤーData.data!.initialMonster;
 
     // 2. 空文字でニックネーム変更試行
     const 空文字Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ニックネーム: '' }),
+      body: JSON.stringify({ nickname: '' }),
     });
 
     expect(空文字Response.status).toBe(400);
@@ -396,7 +437,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const 長文字Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ニックネーム: 'a'.repeat(21) }), // 21文字
+      body: JSON.stringify({ nickname: 'a'.repeat(21) }), // 21文字
     });
 
     expect(長文字Response.status).toBe(400);
@@ -415,18 +456,20 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const プレイヤー作成Response = await app.request('/api/players', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 名前: 'リリーサー' }),
+      body: JSON.stringify({ 
+        name: 'リリーサー',
+      }),
     });
     
     const プレイヤーData = await プレイヤー作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
-    const プレイヤーId = プレイヤーData.データ!.id;
-    const 初期モンスター = プレイヤーData.データ!.初期モンスター;
+    const プレイヤーId = プレイヤーData.data!.id;
+    const 初期モンスター = プレイヤーData.data!.initialMonster;
 
     // 解放前の確認
     const 解放前 = await db
       .select()
-      .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.プレイヤーid, プレイヤーId));
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.playerId, プレイヤーId));
     expect(解放前).toHaveLength(1);
 
     // 2. モンスター解放
@@ -437,14 +480,14 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(解放Response.status).toBe(200);
     const 解放Data = await 解放Response.json() as APIレスポンス<unknown>;
     
-    expect(解放Data.成功).toBe(true);
-    expect(解放Data.メッセージ).toBe('モンスターを解放しました');
+    expect(解放Data.success).toBe(true);
+    expect(解放Data.message).toBe('モンスターを解放しました');
 
     // データベース確認（削除されていること）
     const 解放後 = await db
       .select()
-      .from(schema.所持モンスター)
-      .where(eq(schema.所持モンスター.プレイヤーid, プレイヤーId));
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.playerId, プレイヤーId));
     expect(解放後).toHaveLength(0);
   });
 
@@ -462,12 +505,12 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const 変更Response = await app.request(`/api/monsters/${存在しないId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ニックネーム: 'テスト' }),
+      body: JSON.stringify({ nickname: 'テスト' }),
     });
 
     expect(変更Response.status).toBe(404);
-    const 変更Data = await 変更Response.json() as APIレスポンス<{ ニックネーム: string }>;
-    expect(変更Data.成功).toBe(false);
+    const 変更Data = await 変更Response.json() as APIレスポンス<{ nickname: string }>;
+    expect(変更Data.success).toBe(false);
 
     // 解放試行
     const 解放Response = await app.request(`/api/monsters/${存在しないId}`, {
@@ -476,7 +519,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
 
     expect(解放Response.status).toBe(404);
     const 解放Data = await 解放Response.json() as APIレスポンス<unknown>;
-    expect(解放Data.成功).toBe(false);
+    expect(解放Data.success).toBe(false);
   });
 
   /**
@@ -491,11 +534,13 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     const 作成Response = await app.request('/api/players', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 名前: '取得テストプレイヤー' }),
+      body: JSON.stringify({ 
+        name: '取得テストプレイヤー',
+      }),
     });
     
     const 作成Data = await 作成Response.json() as APIレスポンス<プレイヤー作成データ型>;
-    const プレイヤーId = 作成Data.データ!.id;
+    const プレイヤーId = 作成Data.data!.id;
 
     // 2. プレイヤー取得
     const 取得Response = await app.request(`/api/players/${プレイヤーId}`);
@@ -503,10 +548,10 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     expect(取得Response.status).toBe(200);
     const 取得Data = await 取得Response.json() as APIレスポンス<プレイヤー取得データ型>;
     
-    expect(取得Data.成功).toBe(true);
-    expect(取得Data.データ!.id).toBe(プレイヤーId);
-    expect(取得Data.データ!.名前).toBe('取得テストプレイヤー');
-    expect(取得Data.データ!.作成日時).toBeDefined();
+    expect(取得Data.success).toBe(true);
+    expect(取得Data.data!.id).toBe(プレイヤーId);
+    expect(取得Data.data!.name).toBe('取得テストプレイヤー');
+    expect(取得Data.data!.createdAt).toBeDefined();
   });
 });
 

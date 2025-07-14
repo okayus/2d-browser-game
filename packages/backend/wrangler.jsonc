@@ -3,7 +3,7 @@
   // 初学者向けメモ：jsonc形式でコメントが書けるため、より分かりやすい設定が可能
   
   "name": "monster-game-backend",
-  "main": "src/index.minimal.ts",
+  "main": "src/index.ts",
   "compatibility_date": "2024-01-01",
   
   // D1データベース設定
@@ -16,6 +16,24 @@
       "preview_database_id": "local-monster-game" // ローカル開発用の識別子
     }
   ],
+  
+  // KV Namespace設定
+  // 初学者向けメモ：Firebase認証のJWT公開鍵キャッシュ用
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV", // Workers内でenv.AUTH_KVとしてアクセス可能
+      "id": "429001581b7e442cb8e600bc6b6485d2", // 本番用KV Namespace ID
+      "preview_id": "f0254456ad6f494c809c17b38df7231e" // プレビュー用KV Namespace ID
+    }
+  ],
+  
+  // 環境変数設定
+  // 初学者向けメモ：Firebase認証に必要な設定値
+  "vars": {
+    "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
+    "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks",
+    "JWT_CACHE_TTL": "3600"
+  },
   
   // 環境別設定
   "env": {
@@ -30,9 +48,19 @@
           "preview_database_id": "local-monster-game" // ローカル開発用の識別子
         }
       ],
+      "kv_namespaces": [
+        {
+          "binding": "AUTH_KV",
+          "id": "429001581b7e442cb8e600bc6b6485d2",
+          "preview_id": "f0254456ad6f494c809c17b38df7231e"
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "development",
-        "LOG_LEVEL": "debug"
+        "LOG_LEVEL": "debug",
+        "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
+        "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks-dev",
+        "JWT_CACHE_TTL": "1800"
       }
     },
     
@@ -46,15 +74,25 @@
           "database_id": "YOUR_PROD_DATABASE_ID_HERE" // 本番用は別途作成
         }
       ],
+      "kv_namespaces": [
+        {
+          "binding": "AUTH_KV",
+          "id": "429001581b7e442cb8e600bc6b6485d2"
+        }
+      ],
       "vars": {
         "ENVIRONMENT": "production",
-        "LOG_LEVEL": "error"
+        "LOG_LEVEL": "error",
+        "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
+        "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks-prod",
+        "JWT_CACHE_TTL": "3600"
       }
     }
   },
   
   // Node.js互換性設定
   // 初学者向けメモ：wrangler v4からはcompatibility_flagsを使用
+  // "nodejs_compat": Node.jsモジュールの一部をサポート
   "compatibility_flags": ["nodejs_compat"],
   
   // ビルド設定

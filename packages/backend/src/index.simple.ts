@@ -35,8 +35,8 @@ app.get('/health', async (c) => {
   try {
     // データベース接続テスト
     const db = drizzle(c.env.DB, { schema });
-    await db.select({ count: schema.モンスター種族.id })
-      .from(schema.モンスター種族)
+    await db.select({ count: schema.monsterSpecies.id })
+      .from(schema.monsterSpecies)
       .limit(1);
     
     return c.json({
@@ -60,7 +60,7 @@ app.get('/health', async (c) => {
 app.get('/monster-species', async (c) => {
   try {
     const db = drizzle(c.env.DB, { schema });
-    const species = await db.select().from(schema.モンスター種族);
+    const species = await db.select().from(schema.monsterSpecies);
     
     return c.json({
       success: true,
@@ -97,31 +97,31 @@ app.post('/players', async (c) => {
     const now = new Date();
     
     // プレイヤーの作成
-    await db.insert(schema.プレイヤー).values({
+    await db.insert(schema.players).values({
       id: playerId,
-      名前: name,
-      作成日時: now,
-      更新日時: now,
+      name: name,
+      createdAt: now,
+      updatedAt: now,
     });
     
     // 初期モンスターの付与
     const initialMonsterId = `monster_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const electricMouse = await db.select()
-      .from(schema.モンスター種族)
-      .where(eq(schema.モンスター種族.id, 'electric_mouse'))
+      .from(schema.monsterSpecies)
+      .where(eq(schema.monsterSpecies.id, 'electric_mouse'))
       .limit(1);
     
     if (electricMouse.length > 0 && electricMouse[0]) {
       const species = electricMouse[0];
-      await db.insert(schema.所持モンスター).values({
+      await db.insert(schema.ownedMonsters).values({
         id: initialMonsterId,
-        プレイヤーid: playerId,
-        種族id: 'electric_mouse',
-        ニックネーム: species.名前,
-        現在hp: species.基本hp,
-        最大hp: species.基本hp,
-        取得日時: now,
-        更新日時: now,
+        playerId: playerId,
+        speciesId: 'electric_mouse',
+        nickname: species.name,
+        currentHp: species.baseHp,
+        maxHp: species.baseHp,
+        obtainedAt: now,
+        updatedAt: now,
       });
     }
     
@@ -152,8 +152,8 @@ app.get('/players/:id/monsters', async (c) => {
     
     // プレイヤーの存在確認
     const player = await db.select()
-      .from(schema.プレイヤー)
-      .where(eq(schema.プレイヤー.id, playerId))
+      .from(schema.players)
+      .where(eq(schema.players.id, playerId))
       .limit(1);
     
     if (player.length === 0) {
@@ -166,20 +166,20 @@ app.get('/players/:id/monsters', async (c) => {
     // 所持モンスターの取得（種族情報も含む）
     const monsters = await db
       .select({
-        id: schema.所持モンスター.id,
-        ニックネーム: schema.所持モンスター.ニックネーム,
-        現在hp: schema.所持モンスター.現在hp,
-        最大hp: schema.所持モンスター.最大hp,
-        取得日時: schema.所持モンスター.取得日時,
-        種族名: schema.モンスター種族.名前,
-        種族説明: schema.モンスター種族.説明,
+        id: schema.ownedMonsters.id,
+        ニックネーム: schema.ownedMonsters.nickname,
+        現在hp: schema.ownedMonsters.currentHp,
+        最大hp: schema.ownedMonsters.maxHp,
+        取得日時: schema.ownedMonsters.obtainedAt,
+        種族名: schema.monsterSpecies.name,
+        種族説明: schema.monsterSpecies.description,
       })
-      .from(schema.所持モンスター)
+      .from(schema.ownedMonsters)
       .innerJoin(
-        schema.モンスター種族,
-        eq(schema.所持モンスター.種族id, schema.モンスター種族.id)
+        schema.monsterSpecies,
+        eq(schema.ownedMonsters.speciesId, schema.monsterSpecies.id)
       )
-      .where(eq(schema.所持モンスター.プレイヤーid, playerId));
+      .where(eq(schema.ownedMonsters.playerId, playerId));
     
     return c.json({
       success: true,

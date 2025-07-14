@@ -67,6 +67,20 @@ jspm_packages/
 .env.test.local
 .env.production.local
 .env.local
+.dev.vars
+.dev.vars.*
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
+firebase.json
+
+# Cloudflare Workers specific
+.wrangler/
+wrangler.toml
+.wrangler.toml
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -142,3 +156,9 @@ ehthumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Log files
+*.log
+server.log
+frontend.log
+build.log

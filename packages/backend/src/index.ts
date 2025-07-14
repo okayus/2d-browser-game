@@ -9,16 +9,19 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { drizzle } from 'drizzle-orm/d1';
-import * as schema from './db/schema';
-import { データベース初期化 } from './db/migration';
+import { データベース初期化 } from './db/migration-simple';
 import { ロガー } from './utils/logger';
-import { プレイヤールーター } from './api/player';
 import モンスターAPI from './api/monster';
+import { firebaseAuthMiddleware } from './middleware/firebase-auth-new';
 
 // Cloudflare Workers の環境変数型定義
-type Bindings = {
+interface Bindings {
   DB: D1Database; // D1データベース
+  AUTH_KV?: KVNamespace; // Firebase認証用KV
+  FIREBASE_PROJECT_ID?: string; // FirebaseプロジェクトID
+  PUBLIC_JWK_CACHE_KEY?: string; // JWT公開鍵キャッシュキー
+  JWT_CACHE_TTL?: string; // JWTキャッシュTTL
+  [key: string]: unknown; // Honoの型制約に対応
 }
 
 // Honoアプリケーションの作成
@@ -53,39 +56,87 @@ app.use('/*', cors({
  * - 監視やデバッグで使用
  */
 app.get('/health', (c) => {
-  return c.json({
-    ステータス: 'OK',
-    タイムスタンプ: new Date().toISOString(),
-    メッセージ: 'モンスター収集ゲームAPIが正常に動作しています',
-  });
+  try {
+    return c.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      message: 'Monster Game API is running',
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    return c.text('Health check failed', 500);
+  }
 });
 
 /**
- * APIルートの設定
- * 
- * 初学者向けメモ：
- * - 各APIルーターをマウント
- * - データベース初期化も含む
+ * データベース初期化ミドルウェア
  */
 app.use('/api/*', async (c, next) => {
-  // データベース初期化
-  await データベース初期化(c.env.DB);
+  await データベース初期化(c.env.DB as D1Database);
   await next();
 });
 
-// プレイヤーAPIのマウント
-app.route('/api/players', (() => {
-  const プレイヤーApp = new Hono<{ Bindings: Bindings }>();
-  
-  // 全てのプレイヤーエンドポイント
-  プレイヤーApp.all('/*', async (c) => {
-    const db = drizzle(c.env.DB, { schema });
-    const router = プレイヤールーター(db);
-    return router.fetch(c.req.raw, c.env);
-  });
-  
-  return プレイヤーApp;
-})());
+/**
+ * プレイヤーAPI実装（firebase-auth-cloudflare-workers版）
+ */
+app.post('/api/players', async (c) => {
+  try {
+    // Firebase認証チェック
+    const authResult = await firebaseAuthMiddleware(c.req.raw, {
+      AUTH_KV: c.env.AUTH_KV,
+      FIREBASE_PROJECT_ID: c.env.FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: c.env.PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: c.env.JWT_CACHE_TTL || '',
+    });
+    
+    if (!authResult.success) {
+      return authResult.response;
+    }
+    
+    // 認証成功：プレイヤー作成処理
+    const body = await c.req.json();
+    const playerName = body.name;
+    
+    if (!playerName || typeof playerName !== 'string') {
+      return c.json({ 
+        success: false, 
+        error: 'プレイヤー名が必要です' 
+      }, 400);
+    }
+
+    const playerId = crypto.randomUUID();
+    
+    ロガー.情報('プレイヤー作成成功', {
+      playerId,
+      playerName,
+      firebaseUid: authResult.user.uid
+    });
+    
+    return c.json({
+      success: true,
+      message: 'プレイヤーが作成されました（Firebase認証）',
+      data: {
+        id: playerId,
+        name: playerName,
+        firebaseUid: authResult.user.uid,
+        email: authResult.user.email || '',
+        createdAt: new Date().toISOString(),
+      }
+    }, 201);
+    
+  } catch (error) {
+    ロガー.エラー('プレイヤー作成エラー', error instanceof Error ? error : new Error(String(error)));
+    return c.json({ 
+      success: false, 
+      error: 'サーバーエラーが発生しました' 
+    }, 500);
+  }
+});
+
+// デバッグ用テストルート
+app.get('/api/test', (c) => {
+  return c.json({ message: 'API test endpoint works!' });
+});
 
 // モンスターAPIのマウント
 app.route('/api', モンスターAPI);

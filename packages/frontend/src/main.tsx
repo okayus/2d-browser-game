@@ -6,6 +6,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { AuthProvider } from './contexts/AuthContext'
 import './styles/index.css'
 
 /**
@@ -19,12 +20,14 @@ if (!rootElement) {
 
 /**
  * React 18のcreateRoot APIを使用してアプリを起動
- * BrowserRouterでルーティング機能を有効化
+ * AuthProviderで認証機能を提供し、BrowserRouterでルーティング機能を有効化
  */
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </AuthProvider>
   </React.StrictMode>
 )

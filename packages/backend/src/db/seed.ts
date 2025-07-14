@@ -22,43 +22,43 @@ import type { データベース型 } from './types';
 const 初期モンスター種族 = [
   {
     id: uuid生成(),
-    名前: 'でんきネズミ',
-    基本hp: 35,
-    説明: '電気を操る小さなモンスター',
-    作成日時: new Date(),
-    更新日時: new Date(),
+    name: 'でんきネズミ',
+    baseHp: 35,
+    description: '電気を操る小さなモンスター',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: uuid生成(),
-    名前: 'ほのおトカゲ',
-    基本hp: 40,
-    説明: '炎を吐く爬虫類モンスター',
-    作成日時: new Date(),
-    更新日時: new Date(),
+    name: 'ほのおトカゲ',
+    baseHp: 40,
+    description: '炎を吐く爬虫類モンスター',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: uuid生成(),
-    名前: 'みずガメ',
-    基本hp: 45,
-    説明: '水を操る亀のモンスター',
-    作成日時: new Date(),
-    更新日時: new Date(),
+    name: 'みずガメ',
+    baseHp: 45,
+    description: '水を操る亀のモンスター',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: uuid生成(),
-    名前: 'くさモグラ',
-    基本hp: 30,
-    説明: '植物を育てるモグラモンスター',
-    作成日時: new Date(),
-    更新日時: new Date(),
+    name: 'くさモグラ',
+    baseHp: 30,
+    description: '植物を育てるモグラモンスター',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: uuid生成(),
-    名前: 'いわゴーレム',
-    基本hp: 50,
-    説明: '岩石でできた力強いモンスター',
-    作成日時: new Date(),
-    更新日時: new Date(),
+    name: 'いわゴーレム',
+    baseHp: 50,
+    description: '岩石でできた力強いモンスター',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ];
 
@@ -77,7 +77,7 @@ export async function 初期データ投入(db: データベース型) {
     // 既存データのチェック
     const 既存種族 = await db
       .select()
-      .from(schema.モンスター種族)
+      .from(schema.monsterSpecies)
       .limit(1);
 
     if (既存種族.length > 0) {
@@ -89,14 +89,14 @@ export async function 初期データ投入(db: データベース型) {
     console.log('モンスター種族データを投入中...');
     
     for (const 種族 of 初期モンスター種族) {
-      await db.insert(schema.モンスター種族).values(種族);
-      console.log(`✅ ${種族.名前} を追加しました`);
+      await db.insert(schema.monsterSpecies).values(種族);
+      console.log(`✅ ${種族.name} を追加しました`);
     }
 
     console.log('初期データの投入が完了しました！');
     
     // 投入結果の確認
-    const 投入済み種族 = await db.select().from(schema.モンスター種族);
+    const 投入済み種族 = await db.select().from(schema.monsterSpecies);
     console.log(`合計 ${投入済み種族.length} 種類のモンスターを登録しました`);
     
   } catch (error) {
@@ -118,9 +118,9 @@ export async function データリセット(db: データベース型) {
   
   try {
     // 外部キー制約の順序を考慮して削除
-    await db.delete(schema.所持モンスター);
-    await db.delete(schema.モンスター種族);
-    await db.delete(schema.プレイヤー);
+    await db.delete(schema.ownedMonsters);
+    await db.delete(schema.monsterSpecies);
+    await db.delete(schema.players);
     
     console.log('✅ データベースのリセットが完了しました');
   } catch (error) {

@@ -165,6 +165,7 @@ export function updateGameState(updates: {
   selectedMonster?: typeof MONSTER_TYPES[0]
   playerPosition?: { x: number; y: number }
   gameState?: string
+  playerId?: string
 }): boolean {
   try {
     if (updates.playerName !== undefined) {
@@ -178,6 +179,9 @@ export function updateGameState(updates: {
     }
     if (updates.gameState !== undefined) {
       setStorageData('game_state', updates.gameState)
+    }
+    if (updates.playerId !== undefined) {
+      setStorageData('player_id', updates.playerId)
     }
     return true
   } catch (error) {

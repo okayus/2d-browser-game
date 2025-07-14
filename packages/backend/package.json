@@ -18,13 +18,15 @@
     "db:generate": "drizzle-kit generate:sqlite",
     "db:push": "drizzle-kit push:sqlite",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx src/db/seedスクリプト.ts",
-    "seed:reset": "tsx src/db/seedスクリプト.ts --reset"
+    "seed": "tsx src/db/seed-script.node.ts",
+    "seed:reset": "tsx src/db/seed-script.node.ts --reset"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.2.0",
     "drizzle-orm": "^0.29.0",
+    "firebase-auth-cloudflare-workers": "^2.0.6",
     "hono": "^3.12.0",
+    "jose": "^6.0.11",
     "zod": "^3.22.0"
   },
   "devDependencies": {

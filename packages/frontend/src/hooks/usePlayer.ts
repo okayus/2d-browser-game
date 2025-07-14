@@ -3,8 +3,7 @@
  * プレイヤーの作成・取得・状態管理を行う
  */
 import { useState, useCallback } from 'react'
-import { playerAPI, APIError } from '../api'
-import type { PlayerCreationResponse, PlayerResponse } from '../types/api'
+import { playerApi, handleApiError } from '../lib/api'
 import { setStorageData } from '../lib/utils'
 
 /**
@@ -61,37 +60,31 @@ export function usePlayer(): UsePlayerReturn {
     setError(null)
 
     try {
-      // バックエンドAPIを呼び出し
-      const response = await playerAPI.create(name) as unknown as PlayerCreationResponse
+      // 新しいAPIクライアントを使用
+      const response = await playerApi.create({ name })
       
-      if (response.success && response.data) {
-        const playerData: PlayerData = {
-          id: response.data.id,
-          name: response.data.name,
-          createdAt: response.data.createdAt,
-          initialMonsterId: response.data.initialMonsterId || undefined
-        }
-        
-        // ローカルストレージに保存
-        setStorageData('player_id', playerData.id)
-        setStorageData('player_name', playerData.name)
-        
-        setPlayer(playerData)
-        return playerData
-      } else {
-        const errorMsg = '予期しないレスポンス形式です'
-        setError(errorMsg)
-        return null
+      const apiResponse = response as {
+        id: string;
+        name: string;
+        createdAt: string;
+        initialMonster?: { id: string };
+      };
+      
+      const playerData: PlayerData = {
+        id: apiResponse.id,
+        name: apiResponse.name,
+        createdAt: apiResponse.createdAt,
+        initialMonsterId: apiResponse.initialMonster?.id || undefined
       }
+      
+      // ローカルストレージに保存
+      setStorageData('player_id', playerData.id)
+      setStorageData('player_name', playerData.name)
+      
+      setPlayer(playerData)
+      return playerData
     } catch (err) {
-      let errorMessage = 'プレイヤーの作成に失敗しました'
-      
-      if (err instanceof APIError) {
-        errorMessage = err.message
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      
+      const errorMessage = handleApiError(err)
       setError(errorMessage)
       return null
     } finally {
@@ -109,37 +102,25 @@ export function usePlayer(): UsePlayerReturn {
     setError(null)
 
     try {
-      // バックエンドAPIを呼び出し
-      const response = await playerAPI.get(id) as unknown as PlayerResponse
+      // 新しいAPIクライアントを使用
+      const response = await playerApi.getById(id)
       
-      if (response.success && response.data) {
-        const playerData: PlayerData = {
-          id: response.data.id,
-          name: response.data.name,
-          createdAt: response.data.createdAt
-        }
-        
-        setPlayer(playerData)
-        return playerData
-      } else {
-        const errorMsg = 'プレイヤー情報が見つかりませんでした'
-        setError(errorMsg)
-        return null
+      const apiResponse = response as {
+        id: string;
+        name: string;
+        createdAt: string;
+      };
+      
+      const playerData: PlayerData = {
+        id: apiResponse.id,
+        name: apiResponse.name,
+        createdAt: apiResponse.createdAt
       }
+      
+      setPlayer(playerData)
+      return playerData
     } catch (err) {
-      let errorMessage = 'プレイヤー情報の取得に失敗しました'
-      
-      if (err instanceof APIError) {
-        // 404エラーの場合は、プレイヤーが存在しないことを示す
-        if (err.status === 404) {
-          errorMessage = 'プレイヤーが見つかりませんでした'
-        } else {
-          errorMessage = err.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      
+      const errorMessage = handleApiError(err)
       setError(errorMessage)
       return null
     } finally {

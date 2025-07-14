@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllMonsters, getGameState, updateGameState, type MonsterType } from '../lib/utils'
+import { usePlayer } from '../hooks/usePlayer'
 
 /**
  * プレイヤー作成画面のメインコンポーネント
@@ -13,11 +14,16 @@ import { getAllMonsters, getGameState, updateGameState, type MonsterType } from 
 export function PlayerCreationPage() {
   const navigate = useNavigate()
   
+  // プレイヤー管理フック
+  const { createPlayer, isLoading: playerLoading, error: playerError } = usePlayer()
+  
   // 状態管理
   const [playerName, setPlayerName] = useState('')
   const [selectedMonster, setSelectedMonster] = useState<MonsterType | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  // ローディング状態の統合
+  const isLoading = playerLoading
   
   // モンスター種族の一覧を取得
   const monsters = getAllMonsters()
@@ -29,13 +35,22 @@ export function PlayerCreationPage() {
   useEffect(() => {
     const gameState = getGameState()
     
-    if (!gameState.playerName) {
-      // プレイヤー名が設定されていない場合はスタート画面に戻る
-      navigate('/')
-      return
-    }
+    console.log('PlayerCreationPage mounted:', {
+      gameState,
+      hasPlayerName: !!gameState.playerName,
+      pathname: window.location.pathname,
+      localStorageState: {
+        playerName: localStorage.getItem('player_name'),
+        gameState: localStorage.getItem('game_state'),
+        selectedMonster: localStorage.getItem('selected_monster')
+      }
+    })
     
-    setPlayerName(gameState.playerName)
+    // Firebase認証済みのユーザーはプレイヤー名入力可能
+    // LocalStorageにプレイヤー名がある場合は復元
+    if (gameState.playerName) {
+      setPlayerName(gameState.playerName)
+    }
     
     // 既存の選択があれば復元
     if (gameState.selectedMonster) {
@@ -60,39 +75,35 @@ export function PlayerCreationPage() {
 
   /**
    * 冒険開始処理
-   * マップ画面に遷移
+   * 実際のAPI経由でプレイヤー作成
    */
   const handleStartAdventure = async () => {
     if (!selectedMonster) {
-      setError('パートナーモンスターを選択してください')
+      // バリデーションエラーは今のところアラートで表示
+      alert('パートナーモンスターを選択してください')
       return
     }
 
-    setIsLoading(true)
-    setError('')
+    if (!playerName.trim()) {
+      alert('プレイヤー名を入力してください')
+      return
+    }
 
-    try {
-      // ゲーム状態を更新
-      const success = updateGameState({
+    // 実際のAPI経由でプレイヤー作成
+    const createdPlayer = await createPlayer(playerName.trim())
+    
+    if (createdPlayer) {
+      // ローカルストレージにも保存（互換性のため）
+      updateGameState({
         selectedMonster,
-        gameState: 'playing'
+        gameState: 'playing',
+        playerId: createdPlayer.id
       })
 
-      if (!success) {
-        setError('データの保存に失敗しました。もう一度お試しください。')
-        return
-      }
-
-      // 少し遅延してからマップ画面に遷移
-      setTimeout(() => {
-        navigate('/map')
-      }, 1000)
-
-    } catch (err) {
-      setError('予期しないエラーが発生しました。')
-    } finally {
-      setIsLoading(false)
+      // マップ画面に遷移
+      navigate('/map')
     }
+    // エラーはusePlayerフックが管理
   }
 
   /**
@@ -131,31 +142,48 @@ export function PlayerCreationPage() {
         <main>
         <div className="space-y-6">
           
-          {/* プレイヤー情報表示 */}
+          {/* プレイヤー情報入力 */}
           <div className="bg-white/90 rounded-lg p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4">プレイヤー情報</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">👤</span>
-                <div>
-                  <p className="text-sm text-gray-600">プレイヤー名</p>
-                  <p className="font-medium">{playerName}</p>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="playerName" className="block text-sm font-medium text-gray-700 mb-2">
+                  プレイヤー名を入力してください
+                </label>
+                <input
+                  type="text"
+                  id="playerName"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="あなたの名前を入力"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  maxLength={20}
+                />
+                <p className="text-xs text-gray-500 mt-1">最大20文字まで入力できます</p>
               </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">🎮</span>
-                <div>
-                  <p className="text-sm text-gray-600">ゲーム状態</p>
-                  <p className="font-medium">準備中</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">👤</span>
+                  <div>
+                    <p className="text-sm text-gray-600">入力済み文字数</p>
+                    <p className="font-medium">{playerName.length}/20</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">🎮</span>
+                  <div>
+                    <p className="text-sm text-gray-600">ゲーム状態</p>
+                    <p className="font-medium">準備中</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* エラーメッセージ */}
-          {error && (
+          {(error || playerError) && (
             <div className="message-error animate-slide-up" data-testid="error-message">
-              {error}
+              {error || playerError}
             </div>
           )}
 

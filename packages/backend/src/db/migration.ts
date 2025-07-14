@@ -53,30 +53,30 @@ export async function データベース初期化(
 export async function サンプルデータ投入(db: データベース型) {
   try {
     // モンスター種族のサンプルデータ
-    await db.insert(schema.モンスター種族).values([
+    await db.insert(schema.monsterSpecies).values([
       {
         id: 'fire_dragon',
-        名前: '火竜',
-        基本hp: 100,
-        説明: '炎を吐く強力なドラゴン',
-        作成日時: new Date(),
-        更新日時: new Date(),
+        name: '火竜',
+        baseHp: 100,
+        description: '炎を吐く強力なドラゴン',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
       {
         id: 'water_turtle',
-        名前: '水亀',
-        基本hp: 80,
-        説明: '水系の技を得意とする亀',
-        作成日時: new Date(),
-        更新日時: new Date(),
+        name: '水亀',
+        baseHp: 80,
+        description: '水系の技を得意とする亀',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
       {
         id: 'grass_fairy',
-        名前: '草妖精',
-        基本hp: 60,
-        説明: '森に住む小さな妖精',
-        作成日時: new Date(),
-        更新日時: new Date(),
+        name: '草妖精',
+        baseHp: 60,
+        description: '森に住む小さな妖精',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     ]);
     
