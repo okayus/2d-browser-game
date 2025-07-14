@@ -24,11 +24,6 @@ export const AuthDebugTool: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [idToken, setIdToken] = useState<string | null>(null);
 
-  // 本番環境では表示しない
-  if (import.meta.env.PROD) {
-    return null;
-  }
-
   /**
    * IDトークンを取得
    * 
@@ -57,11 +52,18 @@ export const AuthDebugTool: React.FC = () => {
    */
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).firebaseAuth = auth;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).currentUser = currentUser;
       console.log('🔧 デバッグ用: window.firebaseAuth と window.currentUser が利用可能です');
     }
   }, [currentUser]);
+  
+  // 本番環境では何も表示しない
+  if (import.meta.env.PROD) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 right-4 z-50">

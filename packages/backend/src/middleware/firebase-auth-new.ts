@@ -14,7 +14,7 @@ import { ロガー } from '../utils/logger';
  */
 interface FirebaseAuthEnv {
   /** Cloudflare KV binding for JWT key caching */
-  AUTH_KV: KVNamespace;
+  AUTH_KV?: KVNamespace | undefined;
   /** Firebase Project ID */
   FIREBASE_PROJECT_ID: string;
   /** JWT cache key for storing public keys */
@@ -123,7 +123,11 @@ export async function firebaseAuthMiddleware(
       }
       
       // ペイロードをデコード
-      const payload = JSON.parse(atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const payloadPart = tokenParts[1];
+      if (!payloadPart) {
+        throw new Error('Invalid JWT format: missing payload');
+      }
+      const payload = JSON.parse(atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/')));
       
       // 基本的な検証（Firebase JWTの実際のフィールド名を使用）
       if (!payload.sub || !payload.aud) {

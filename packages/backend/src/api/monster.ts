@@ -102,9 +102,9 @@ app.post(
     // Firebase認証チェック
     const authResult = await firebaseAuthMiddleware(c.req.raw, {
       AUTH_KV: c.env.AUTH_KV,
-      FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
-      PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
-      JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+      FIREBASE_PROJECT_ID: (c.env as { FIREBASE_PROJECT_ID?: string }).FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: (c.env as { PUBLIC_JWK_CACHE_KEY?: string }).PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: (c.env as { JWT_CACHE_TTL?: string }).JWT_CACHE_TTL || '',
     });
     if (!authResult.success) {
       return authResult.response;
@@ -249,9 +249,9 @@ app.get(
     // Firebase認証チェック
     const authResult = await firebaseAuthMiddleware(c.req.raw, {
       AUTH_KV: c.env.AUTH_KV,
-      FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
-      PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
-      JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+      FIREBASE_PROJECT_ID: (c.env as { FIREBASE_PROJECT_ID?: string }).FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: (c.env as { PUBLIC_JWK_CACHE_KEY?: string }).PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: (c.env as { JWT_CACHE_TTL?: string }).JWT_CACHE_TTL || '',
     });
     if (!authResult.success) {
       return authResult.response;
@@ -367,9 +367,9 @@ app.put(
     // Firebase認証チェック
     const authResult = await firebaseAuthMiddleware(c.req.raw, {
       AUTH_KV: c.env.AUTH_KV,
-      FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
-      PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
-      JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+      FIREBASE_PROJECT_ID: (c.env as { FIREBASE_PROJECT_ID?: string }).FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: (c.env as { PUBLIC_JWK_CACHE_KEY?: string }).PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: (c.env as { JWT_CACHE_TTL?: string }).JWT_CACHE_TTL || '',
     });
     if (!authResult.success) {
       return authResult.response;
@@ -464,9 +464,9 @@ app.delete('/monsters/:monsterId', async (c) => {
   // Firebase認証チェック
   const authResult = await firebaseAuthMiddleware(c.req.raw, {
     AUTH_KV: c.env.AUTH_KV,
-    FIREBASE_PROJECT_ID: (c.env as any).FIREBASE_PROJECT_ID || '',
-    PUBLIC_JWK_CACHE_KEY: (c.env as any).PUBLIC_JWK_CACHE_KEY || '',
-    JWT_CACHE_TTL: (c.env as any).JWT_CACHE_TTL || '',
+    FIREBASE_PROJECT_ID: (c.env as { FIREBASE_PROJECT_ID?: string }).FIREBASE_PROJECT_ID || '',
+    PUBLIC_JWK_CACHE_KEY: (c.env as { PUBLIC_JWK_CACHE_KEY?: string }).PUBLIC_JWK_CACHE_KEY || '',
+    JWT_CACHE_TTL: (c.env as { JWT_CACHE_TTL?: string }).JWT_CACHE_TTL || '',
   });
   if (!authResult.success) {
     return authResult.response;

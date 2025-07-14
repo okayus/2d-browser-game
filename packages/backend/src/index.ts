@@ -9,21 +9,19 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { drizzle } from 'drizzle-orm/d1';
-import * as schema from './db/schema';
 import { データベース初期化 } from './db/migration-simple';
 import { ロガー } from './utils/logger';
-import { playerRouter } from './api/player';
 import モンスターAPI from './api/monster';
 import { firebaseAuthMiddleware } from './middleware/firebase-auth-new';
 
 // Cloudflare Workers の環境変数型定義
-type Bindings = {
+interface Bindings {
   DB: D1Database; // D1データベース
   AUTH_KV?: KVNamespace; // Firebase認証用KV
   FIREBASE_PROJECT_ID?: string; // FirebaseプロジェクトID
   PUBLIC_JWK_CACHE_KEY?: string; // JWT公開鍵キャッシュキー
   JWT_CACHE_TTL?: string; // JWTキャッシュTTL
+  [key: string]: unknown; // Honoの型制約に対応
 }
 
 // Honoアプリケーションの作成
@@ -74,7 +72,7 @@ app.get('/health', (c) => {
  * データベース初期化ミドルウェア
  */
 app.use('/api/*', async (c, next) => {
-  await データベース初期化(c.env.DB);
+  await データベース初期化(c.env.DB as D1Database);
   await next();
 });
 
@@ -84,7 +82,12 @@ app.use('/api/*', async (c, next) => {
 app.post('/api/players', async (c) => {
   try {
     // Firebase認証チェック
-    const authResult = await firebaseAuthMiddleware(c.req, c.env);
+    const authResult = await firebaseAuthMiddleware(c.req.raw, {
+      AUTH_KV: c.env.AUTH_KV,
+      FIREBASE_PROJECT_ID: c.env.FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: c.env.PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: c.env.JWT_CACHE_TTL || '',
+    });
     
     if (!authResult.success) {
       return authResult.response;

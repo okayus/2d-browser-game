@@ -63,11 +63,18 @@ export function usePlayer(): UsePlayerReturn {
       // 新しいAPIクライアントを使用
       const response = await playerApi.create({ name })
       
+      const apiResponse = response as {
+        id: string;
+        name: string;
+        createdAt: string;
+        initialMonster?: { id: string };
+      };
+      
       const playerData: PlayerData = {
-        id: response.id,
-        name: response.name,
-        createdAt: response.createdAt,
-        initialMonsterId: response.initialMonster?.id || undefined
+        id: apiResponse.id,
+        name: apiResponse.name,
+        createdAt: apiResponse.createdAt,
+        initialMonsterId: apiResponse.initialMonster?.id || undefined
       }
       
       // ローカルストレージに保存
@@ -98,10 +105,16 @@ export function usePlayer(): UsePlayerReturn {
       // 新しいAPIクライアントを使用
       const response = await playerApi.getById(id)
       
+      const apiResponse = response as {
+        id: string;
+        name: string;
+        createdAt: string;
+      };
+      
       const playerData: PlayerData = {
-        id: response.id,
-        name: response.name,
-        createdAt: response.createdAt
+        id: apiResponse.id,
+        name: apiResponse.name,
+        createdAt: apiResponse.createdAt
       }
       
       setPlayer(playerData)
