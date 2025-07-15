@@ -269,13 +269,19 @@ INSERT INTO monster_species (id, name, base_hp, rarity) VALUES
 - [x] モンスター一覧画面
 - [x] 編集・削除機能のUI
 
-### Week 5: バトルシステム実装
+### Week 5: Firebase Authentication実装（Issue #18対応）
+- [x] Firebase Authentication導入
+- [x] ユーザー認証機能の実装
+- [x] JWT認証ミドルウェアの作成
+- [x] 認証状態管理とAPI保護
+
+### Week 6: バトルシステム実装
 - [ ] バトル画面
 - [ ] モンスター獲得機能
 - [ ] 戦闘ロジック（HP管理・ダメージ計算）
 - [ ] ランダムエンカウント強化
 
-### Week 6: 統合・デプロイ
+### Week 7: 統合・デプロイ
 - [ ] フロントエンド・バックエンド統合
 - [ ] エラーハンドリング強化
 - [ ] Cloudflareへのデプロイ
@@ -283,17 +289,25 @@ INSERT INTO monster_species (id, name, base_hp, rarity) VALUES
 
 ## 🚀 段階的拡張案
 
-### Phase 1（MVP後すぐ）
+### 現在の進捗状況（2025年7月時点）
+- **Week 1-4**: 基本CRUD機能完了 ✅
+- **Week 5**: Firebase Authentication導入完了 ✅ (Issue #18)
+- **Week 6**: バトルシステム実装予定 🚧
+- **Week 7**: 統合・デプロイ予定 📋
+
+### Week 8以降の拡張計画
+
+#### Phase 1（Week 8-9）
 - マップ移動
 - ランダムエンカウント
 - 複数のモンスター種類追加
 
-### Phase 2（1ヶ月後）
+#### Phase 2（Week 10-11）
 - モンスターのレベル概念
 - 経験値システム
 - 複数の技
 
-### Phase 3（2ヶ月後）
+#### Phase 3（Week 12-13）
 - モンスター進化
 - タイプ相性
 - トレーナーバトル
