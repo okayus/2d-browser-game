@@ -39,6 +39,7 @@ app.use('/*', cors({
   origin: [
     'http://localhost:5173', // Vite開発サーバー
     'http://localhost:5174', // Vite開発サーバー
+    'http://localhost:5175', // Vite開発サーバー
     'http://localhost:3000', // 代替ポート
     'https://*.pages.dev',   // Cloudflare Pages
   ],
@@ -104,23 +105,74 @@ app.post('/api/players', async (c) => {
       }, 400);
     }
 
-    const playerId = crypto.randomUUID();
+    // データベース接続の準備
+    const { drizzle } = await import('drizzle-orm/d1');
+    const { eq, inArray } = await import('drizzle-orm');
+    const schema = await import('./db/schema');
+    const { uuid生成 } = await import('./utils/uuid');
+    
+    const db = drizzle(c.env.DB as D1Database, { schema });
+    const firebaseUid = authResult.user.uid;
+
+    // Firebase UIDの重複チェック
+    const existingPlayer = await db
+      .select()
+      .from(schema.players)
+      .where(eq(schema.players.firebaseUid, firebaseUid))
+      .get();
+    
+    if (existingPlayer) {
+      return c.json({
+        success: false,
+        error: 'このFirebase UIDは既に使用されています'
+      }, 409);
+    }
+
+    const playerId = uuid生成();
+    const currentTime = new Date();
+    
+    // データベースに新しいプレイヤーを登録
+    const newPlayer = await db
+      .insert(schema.players)
+      .values({
+        id: playerId,
+        name: playerName,
+        firebaseUid: firebaseUid,
+        createdAt: currentTime,
+        updatedAt: currentTime,
+      })
+      .returning()
+      .get();
+
+    if (!newPlayer) {
+      throw new Error('プレイヤーの作成に失敗しました');
+    }
+
+    // 初期モンスターを付与
+    const initialMonster = await grantInitialMonster(db, playerId);
     
     ロガー.情報('プレイヤー作成成功', {
       playerId,
       playerName,
-      firebaseUid: authResult.user.uid
+      firebaseUid: authResult.user.uid,
+      initialMonsterId: initialMonster?.id
     });
     
     return c.json({
       success: true,
       message: 'プレイヤーが作成されました（Firebase認証）',
       data: {
-        id: playerId,
-        name: playerName,
-        firebaseUid: authResult.user.uid,
-        email: authResult.user.email || '',
-        createdAt: new Date().toISOString(),
+        id: newPlayer.id,
+        name: newPlayer.name,
+        firebaseUid: newPlayer.firebaseUid,
+        createdAt: newPlayer.createdAt.toISOString(),
+        initialMonster: initialMonster ? {
+          id: initialMonster.id,
+          speciesName: initialMonster.speciesName,
+          nickname: initialMonster.nickname,
+          currentHp: initialMonster.currentHp,
+          maxHp: initialMonster.maxHp,
+        } : null,
       }
     }, 201);
     
@@ -133,9 +185,196 @@ app.post('/api/players', async (c) => {
   }
 });
 
+/**
+ * 初期モンスター付与関数（Initial monster granting function）
+ * @param db - データベース接続インスタンス
+ * @param playerId - 対象プレイヤーのID
+ * @returns 付与されたモンスターの情報、失敗時はnull
+ */
+async function grantInitialMonster(db: any, playerId: string) {
+  try {
+    const { inArray } = await import('drizzle-orm');
+    const schema = await import('./db/schema');
+    const { uuid生成 } = await import('./utils/uuid');
+    
+    // スターターモンスターの種族名を定義
+    const starterSpeciesNames = ['でんきネズミ', 'ほのおトカゲ', 'くさモグラ'];
+    
+    // データベースからスターター種族を取得
+    const starterSpeciesList = await db
+      .select()
+      .from(schema.monsterSpecies)
+      .where(inArray(schema.monsterSpecies.name, starterSpeciesNames));
+    
+    if (starterSpeciesList.length === 0) {
+      ロガー.警告('スターターモンスターが見つかりません', { starterSpeciesNames });
+      return null;
+    }
+    
+    // ランダムに1体選択
+    const randomIndex = Math.floor(Math.random() * starterSpeciesList.length);
+    const selectedSpecies = starterSpeciesList[randomIndex];
+    
+    if (!selectedSpecies) {
+      ロガー.エラー('スターターモンスターの選択に失敗しました', new Error('選択された種族がundefinedです'));
+      return null;
+    }
+    
+    // 新しいモンスターを作成
+    const newMonster = {
+      id: uuid生成(),
+      playerId,
+      speciesId: selectedSpecies.id,
+      nickname: selectedSpecies.name, // デフォルトは種族名
+      currentHp: selectedSpecies.baseHp,
+      maxHp: selectedSpecies.baseHp,
+      obtainedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    // データベースに挿入
+    await db.insert(schema.ownedMonsters).values(newMonster);
+    
+    ロガー.情報('初期モンスター付与成功', {
+      playerId: playerId,
+      monsterId: newMonster.id,
+      speciesName: selectedSpecies.name,
+    });
+    
+    // 付与されたモンスターの情報を返す
+    return {
+      id: newMonster.id,
+      speciesName: selectedSpecies.name,
+      nickname: newMonster.nickname,
+      currentHp: newMonster.currentHp,
+      maxHp: newMonster.maxHp,
+      obtainedAt: newMonster.obtainedAt,
+    };
+    
+  } catch (error) {
+    ロガー.エラー('初期モンスター付与中のエラー', error instanceof Error ? error : new Error(String(error)), {
+      playerId: playerId,
+    });
+    return null;
+  }
+}
+
 // デバッグ用テストルート
 app.get('/api/test', (c) => {
   return c.json({ message: 'API test endpoint works!' });
+});
+
+/**
+ * 現在のFirebase UIDに紐づくプレイヤーを取得
+ * GET /api/players/me
+ * 
+ * TDD実装：テストファースト開発で作成
+ */
+app.get('/api/players/me', async (c) => {
+  try {
+    // Firebase認証チェック
+    const authResult = await firebaseAuthMiddleware(c.req.raw, {
+      AUTH_KV: c.env.AUTH_KV,
+      FIREBASE_PROJECT_ID: c.env.FIREBASE_PROJECT_ID || '',
+      PUBLIC_JWK_CACHE_KEY: c.env.PUBLIC_JWK_CACHE_KEY || '',
+      JWT_CACHE_TTL: c.env.JWT_CACHE_TTL || '',
+    });
+    
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
+    // データベース接続の準備
+    const { drizzle } = await import('drizzle-orm/d1');
+    const { eq } = await import('drizzle-orm');
+    const schema = await import('./db/schema');
+    
+    const db = drizzle(c.env.DB as D1Database, { schema });
+    const firebaseUid = authResult.user.uid;
+
+    // Firebase UIDでプレイヤーを検索
+    const player = await db
+      .select()
+      .from(schema.players)
+      .where(eq(schema.players.firebaseUid, firebaseUid))
+      .get();
+    
+    if (!player) {
+      return c.json({
+        success: false,
+        error: {
+          code: 'PLAYER_NOT_FOUND',
+          message: 'プレイヤーが見つかりません',
+        },
+      }, 404);
+    }
+
+    // プレイヤー情報を返す
+    return c.json({
+      success: true,
+      data: {
+        id: player.id,
+        name: player.name,
+        firebaseUid: player.firebaseUid,
+        createdAt: player.createdAt.toISOString(),
+      },
+    });
+    
+  } catch (error) {
+    ロガー.エラー('プレイヤー取得エラー', error instanceof Error ? error : new Error(String(error)));
+    return c.json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'サーバーエラーが発生しました',
+      },
+    }, 500);
+  }
+});
+
+// テスト用：認証なしでモンスター一覧を取得（開発環境のみ）
+app.get('/api/test/players/:playerId/monsters', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'This endpoint is only available in development mode' }, 403);
+  }
+
+  const { drizzle } = await import('drizzle-orm/d1');
+  const { eq } = await import('drizzle-orm');
+  const schema = await import('./db/schema');
+  
+  const db = drizzle(c.env.DB as D1Database, { schema });
+  const { playerId } = c.req.param();
+
+  try {
+    const monsters = await db
+      .select({
+        id: schema.ownedMonsters.id,
+        speciesId: schema.ownedMonsters.speciesId,
+        ニックネーム: schema.ownedMonsters.nickname,
+        現在hp: schema.ownedMonsters.currentHp,
+        最大hp: schema.ownedMonsters.maxHp,
+        種族: {
+          id: schema.monsterSpecies.id,
+          名前: schema.monsterSpecies.name,
+        },
+      })
+      .from(schema.ownedMonsters)
+      .leftJoin(
+        schema.monsterSpecies,
+        eq(schema.ownedMonsters.speciesId, schema.monsterSpecies.id)
+      )
+      .where(eq(schema.ownedMonsters.playerId, playerId))
+      .all();
+
+    return c.json({
+      success: true,
+      data: monsters,
+      count: monsters.length,
+    });
+  } catch (error) {
+    console.error('Test monsters fetch error:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
 });
 
 // モンスターAPIのマウント
