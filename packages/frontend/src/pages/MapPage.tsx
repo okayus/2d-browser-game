@@ -2,11 +2,14 @@
  * マップ画面コンポーネント
  * プレイヤーの移動と探索を管理
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GameMap, PlayerPanel } from '../components/game'
 import { Button, Card, CardContent } from '../components/ui'
-import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES } from '../lib/utils'
+import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES, getStorageData, setStorageData } from '../lib/utils'
+import { createRandomWildMonster, convertToBattlePlayerMonster } from '../lib/battle-utils'
+import { useAuth } from '../hooks'
+import { getMapData, validateMapData, MapData } from '../lib/mapData'
 
 /**
  * メッセージの型定義
@@ -34,8 +37,10 @@ interface TileInfo {
  */
 export function MapPage() {
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
   
   // 状態管理
+  const [mapData, setMapData] = useState<MapData | null>(null)
   const [playerPosition, setPlayerPosition] = useState(MAP_CONFIG.startPosition)
   const [playerInfo, setPlayerInfo] = useState<{
     name: string
@@ -43,6 +48,50 @@ export function MapPage() {
   }>({ name: '' })
   const [messages, setMessages] = useState<GameMessage[]>([])
   const [selectedTileInfo, setSelectedTileInfo] = useState<TileInfo | null>(null)
+
+  /**
+   * マップデータの初期化
+   * 固定のマップデータを読み込み
+   */
+  useEffect(() => {
+    const loadMapData = async () => {
+      try {
+        console.log('マップデータを読み込み中...')
+        const data = getMapData()
+        
+        if (validateMapData(data)) {
+          setMapData(data)
+          console.log('マップデータの読み込みが完了しました:', data.name)
+        } else {
+          console.error('マップデータの検証に失敗しました')
+        }
+      } catch (error) {
+        console.error('マップデータの読み込みエラー:', error)
+      }
+    }
+    
+    loadMapData()
+  }, [])
+
+  /**
+   * メッセージを追加
+   * @param text - メッセージテキスト
+   * @param type - メッセージタイプ
+   */
+  const addMessage = useCallback((text: string, type: GameMessage['type'] = 'info') => {
+    const newMessage: GameMessage = {
+      id: crypto.randomUUID(),
+      text,
+      type,
+      timestamp: Date.now()
+    }
+    
+    setMessages(prev => {
+      const updated = [newMessage, ...prev]
+      // 最新の10件のみ保持
+      return updated.slice(0, 10)
+    })
+  }, [])
 
   /**
    * コンポーネント初期化
@@ -68,40 +117,236 @@ export function MapPage() {
       selectedMonster: gameState.selectedMonster
     })
     
-    // 保存されている位置があれば復元
+    // 保存されている位置があれば復元、なければデフォルトの開始位置を使用
     if (gameState.playerPosition) {
       setPlayerPosition(gameState.playerPosition)
     }
     
-    // 初期メッセージを追加
+    // 初期メッセージを追加（一度だけ）
     addMessage('冒険を開始しました！矢印キーまたはWASDで移動できます。', 'info')
-  }, [navigate])
+  }, [navigate, addMessage])
 
   /**
-   * メッセージを追加
-   * @param text - メッセージテキスト
-   * @param type - メッセージタイプ
+   * API レスポンスの型定義
    */
-  const addMessage = (text: string, type: GameMessage['type'] = 'info') => {
-    const newMessage: GameMessage = {
-      id: Date.now().toString(),
-      text,
-      type,
-      timestamp: Date.now()
-    }
-    
-    setMessages(prev => {
-      const updated = [newMessage, ...prev]
-      // 最新の10件のみ保持
-      return updated.slice(0, 10)
-    })
+  interface PlayerMonsterApiResponse {
+    success: boolean;
+    data: Array<{
+      id: string;
+      speciesId: string;
+      ニックネーム: string | null;
+      現在hp: number;
+      最大hp: number;
+      種族?: {
+        名前: string;
+      };
+    }>;
+    count: number;
   }
+
+  /**
+   * プレイヤーの最初のモンスターを取得（Get player's first monster）
+   * @description プレイヤーの所持モンスター一覧から最初のモンスターを取得
+   * @param playerId - プレイヤーID
+   * @returns 最初のモンスターデータまたはnull
+   */
+  const getPlayerFirstMonster = useCallback(async (playerId: string) => {
+    try {
+      console.log('getPlayerFirstMonster called with playerId:', playerId)
+      
+      // 入力値の検証
+      if (!playerId || typeof playerId !== 'string' || playerId.trim() === '') {
+        console.error('getPlayerFirstMonster: 無効なプレイヤーID', { playerId })
+        return null
+      }
+
+      // 開発環境では認証なしのテストエンドポイントを使用
+      const isDevelopment = window.location.hostname === 'localhost'
+      let response: Response
+      
+      if (isDevelopment) {
+        console.log('開発環境：認証なしエンドポイントを使用')
+        response = await fetch(`/api/test/players/${encodeURIComponent(playerId)}/monsters`)
+      } else {
+        const token = await currentUser?.getIdToken()
+        if (!token) {
+          console.error('getPlayerFirstMonster: 認証トークンが取得できません')
+          throw new Error('認証トークンが取得できません')
+        }
+
+        response = await fetch(`/api/players/${encodeURIComponent(playerId)}/monsters`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      }
+
+      if (!response.ok) {
+        console.error('getPlayerFirstMonster: APIエラー', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url
+        })
+        throw new Error(`モンスター一覧の取得に失敗: ${response.status} ${response.statusText}`)
+      }
+
+      const data: PlayerMonsterApiResponse = await response.json()
+      
+      // デバッグ用：API レスポンスをログ出力
+      console.log('プレイヤーモンスター取得 API レスポンス:', data)
+      
+      // レスポンスの型チェック
+      if (!data || typeof data !== 'object' || !Array.isArray(data.data)) {
+        console.error('getPlayerFirstMonster: 無効なAPIレスポンス形式', { data })
+        return null
+      }
+
+      // 最初のモンスターを返す（HPが1以上のもの）
+      const availableMonsters = data.data.filter((monster) => {
+        // データの必須フィールドチェック
+        if (!monster.id || !monster.speciesId || typeof monster.現在hp !== 'number' || typeof monster.最大hp !== 'number') {
+          console.warn('getPlayerFirstMonster: 無効なモンスターデータをスキップ', { monster })
+          return false
+        }
+        return monster.現在hp > 0 && monster.最大hp > 0
+      })
+      
+      if (availableMonsters.length > 0) {
+        const monster = availableMonsters[0]
+        console.log('使用可能なモンスター:', monster)
+        
+        // バトル用にフィールド名を変換して返す
+        const result = {
+          id: monster.id,
+          speciesId: monster.speciesId,
+          nickname: monster.ニックネーム,
+          currentHp: monster.現在hp,
+          maxHp: monster.最大hp,
+          種族: monster.種族
+        }
+        
+        console.log('getPlayerFirstMonster: 変換されたモンスターデータ', result)
+        return result
+      }
+      
+      console.log('使用可能なモンスターが見つかりません')
+      return null
+
+    } catch (error) {
+      console.error('プレイヤーモンスター取得エラー:', {
+        error,
+        playerId,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      return null
+    }
+  }, [currentUser])
+
+  /**
+   * モンスターエンカウント処理（Monster encounter handling）
+   * @description 野生モンスターとの遭遇時の処理
+   */
+  const handleMonsterEncounter = useCallback(async () => {
+    try {
+      if (!currentUser) {
+        addMessage('ログインが必要です', 'warning')
+        return
+      }
+
+      // プレイヤーの所持モンスターを取得
+      const playerId = getStorageData<string>('player_id')
+      console.log('handleMonsterEncounter - LocalStorageから取得したplayerId:', playerId)
+      console.log('LocalStorage全体の内容:', {
+        player_id: localStorage.getItem('player_id'),
+        player_name: localStorage.getItem('player_name'),
+        game_state: localStorage.getItem('game_state'),
+        selected_monster: localStorage.getItem('selected_monster')
+      })
+      
+      if (!playerId) {
+        addMessage('プレイヤーIDが見つかりません', 'warning')
+        return
+      }
+
+      // プレイヤーの最初のモンスターを取得（簡易実装）
+      const playerMonster = await getPlayerFirstMonster(playerId)
+      if (!playerMonster) {
+        addMessage('使用できるモンスターがいません', 'warning')
+        return
+      }
+
+      // ランダムな野生モンスターを生成
+      const wildMonster = createRandomWildMonster()
+      
+      // バトル用にプレイヤーモンスターを変換
+      const battlePlayerMonster = convertToBattlePlayerMonster(playerMonster)
+      if (!battlePlayerMonster) {
+        addMessage('モンスターデータの変換に失敗しました', 'warning')
+        return
+      }
+
+      // バトル初期化データを保存
+      const battleInitData = {
+        wildMonsterSpeciesId: wildMonster.speciesId,
+        playerMonsterId: playerMonster.id,
+        wildMonster,
+        playerMonster: battlePlayerMonster
+      }
+
+      setStorageData('battle_init', battleInitData)
+      
+      // バトル画面に遷移
+      navigate('/battle')
+
+    } catch (error) {
+      console.error('モンスターエンカウント処理エラー:', error)
+      addMessage('エンカウント処理中にエラーが発生しました', 'warning')
+    }
+  }, [currentUser, addMessage, navigate, getPlayerFirstMonster])
+
+  /**
+   * ランダムイベント処理
+   * 移動時に発生する可能性があるイベント
+   */
+  const handleRandomEvent = useCallback(async () => {
+    const events = [
+      {
+        type: 'monster_encounter',
+        message: '野生のモンスターが現れた！',
+        messageType: 'warning' as const,
+        probability: 0.5
+      },
+      {
+        type: 'item_found',
+        message: '何かアイテムを見つけた！',
+        messageType: 'success' as const,
+        probability: 0.3
+      },
+      {
+        type: 'nothing',
+        message: 'この辺りは静かだ...',
+        messageType: 'info' as const,
+        probability: 0.2
+      }
+    ]
+    
+    // テスト用：常にモンスターエンカウントを発生させる
+    const randomEvent = events[0] // monster_encounterを強制選択
+    addMessage(randomEvent.message, randomEvent.messageType)
+
+    // モンスターエンカウントの場合、バトル画面に遷移
+    if (randomEvent.type === 'monster_encounter') {
+      await handleMonsterEncounter()
+    }
+  }, [addMessage, handleMonsterEncounter])
 
   /**
    * プレイヤー移動処理
    * @param newPosition - 新しい位置
    */
-  const handlePlayerMove = (newPosition: { x: number; y: number }) => {
+  const handlePlayerMove = useCallback((newPosition: { x: number; y: number }) => {
     setPlayerPosition(newPosition)
     
     // 移動を保存
@@ -110,74 +355,47 @@ export function MapPage() {
     // 移動メッセージを追加
     addMessage(`座標 (${newPosition.x}, ${newPosition.y}) に移動しました`, 'info')
     
-    // ランダムイベントの判定（10%の確率）
-    if (Math.random() < 0.1) {
+    // テスト用：ランダムイベントの判定（100%の確率）
+    if (Math.random() < 1.0) {
       handleRandomEvent()
     }
-  }
-
-  /**
-   * ランダムイベント処理
-   * 移動時に発生する可能性があるイベント
-   */
-  const handleRandomEvent = () => {
-    const events = [
-      {
-        type: 'monster_encounter',
-        message: '野生のモンスターが現れた！',
-        messageType: 'warning' as const
-      },
-      {
-        type: 'item_found',
-        message: '何かアイテムを見つけた！',
-        messageType: 'success' as const
-      },
-      {
-        type: 'nothing',
-        message: 'この辺りは静かだ...',
-        messageType: 'info' as const
-      }
-    ]
-    
-    const randomEvent = events[Math.floor(Math.random() * events.length)]
-    addMessage(randomEvent.message, randomEvent.messageType)
-  }
+  }, [addMessage, handleRandomEvent])
 
   /**
    * タイル選択処理
    * @param position - 選択された位置
    * @param tile - タイル情報
    */
-  const handleTileSelect = (position: { x: number; y: number }, tile: TileInfo) => {
+  const handleTileSelect = useCallback((position: { x: number; y: number }, tile: TileInfo) => {
     setSelectedTileInfo(tile)
     addMessage(`座標 (${position.x}, ${position.y}) の${tile.name}を調べました`, 'info')
-  }
+  }, [addMessage])
 
   /**
    * プレイヤー作成画面に戻る
    */
-  const handleBackToCreation = () => {
+  const handleBackToCreation = useCallback(() => {
     if (confirm('プレイヤー作成画面に戻りますか？')) {
       navigate('/player-creation')
     }
-  }
+  }, [navigate])
 
   /**
    * ゲームリスタート
    */
-  const handleRestartGame = () => {
+  const handleRestartGame = useCallback(() => {
     if (confirm('ゲームを最初からやり直しますか？すべてのデータが削除されます。')) {
       localStorage.clear()
       navigate('/')
     }
-  }
+  }, [navigate])
 
   /**
    * モンスター一覧画面に移動
    */
-  const handleOpenMonsterList = () => {
+  const handleOpenMonsterList = useCallback(() => {
     navigate('/monsters')
-  }
+  }, [navigate])
 
   return (
     <div className="prototype-background">
@@ -232,13 +450,21 @@ export function MapPage() {
                   </div>
                 </div>
                 
-                <GameMap
-                  width={MAP_CONFIG.width}
-                  height={MAP_CONFIG.height}
-                  playerPosition={playerPosition}
-                  onPlayerMove={handlePlayerMove}
-                  onTileSelect={handleTileSelect}
-                />
+                {mapData ? (
+                  <GameMap
+                    mapData={mapData}
+                    playerPosition={playerPosition}
+                    onPlayerMove={handlePlayerMove}
+                    onTileSelect={handleTileSelect}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-64 bg-gray-100 rounded-lg">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-gray-600">マップを読み込み中...</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -357,7 +583,7 @@ export function MapPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => addMessage(`現在位置: (${playerPosition.x}, ${playerPosition.y})`, 'info')}
+                      onClick={useCallback(() => addMessage(`現在位置: (${playerPosition.x}, ${playerPosition.y})`, 'info'), [addMessage, playerPosition])}
                       className="w-full"
                       data-testid="check-position-button"
                     >
