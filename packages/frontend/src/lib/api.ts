@@ -207,6 +207,7 @@ export const playerApi = {
    * 初学者向けメモ：
    * - Firebase UIDを基にプレイヤー情報を取得
    * - ログイン後の初期画面で使用
+   * - TDD実装で追加されたエンドポイント
    */
   getCurrent: async () => {
     return await apiRequest('/api/players/me', {

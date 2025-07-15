@@ -10,6 +10,8 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
+import { playerApi } from '../lib/api';
+import { setStorageData } from '../lib/utils';
 
 /**
  * ログインページのメインコンポーネント
@@ -27,19 +29,44 @@ export function LoginPage() {
    * 
    * 初学者向けメモ：
    * - Firebase認証成功後に呼び出される
-   * - プレイヤー作成画面またはマップ画面へリダイレクト
+   * - /api/players/meでプレイヤー情報を確認
+   * - 既存プレイヤーはマップ画面へ、新規ユーザーはプレイヤー作成画面へ
    */
-  const handleLoginSuccess = () => {
-    // ローカルストレージでゲーム状態を確認
-    const gameState = localStorage.getItem('game_state');
-    const selectedMonster = localStorage.getItem('selected_monster');
-
-    if (selectedMonster && gameState === 'playing') {
-      // 既にゲームが進行中の場合はマップ画面へ
-      navigate('/map');
-    } else {
-      // プレイヤー作成から開始
-      navigate('/player-creation');
+  const handleLoginSuccess = async () => {
+    try {
+      console.log('ログイン成功、プレイヤー情報を確認中...');
+      
+      // Firebase認証済みユーザーのプレイヤー情報を取得
+      const player = await playerApi.getCurrent();
+      
+      if (player) {
+        // 既存プレイヤーの場合
+        console.log('既存プレイヤーを検出:', player);
+        
+        // LocalStorageにプレイヤー情報を保存
+        setStorageData('player_id', (player as any).id);
+        setStorageData('player_name', (player as any).name);
+        setStorageData('game_state', 'playing');
+        
+        // マップ画面へ遷移
+        navigate('/map');
+      } else {
+        // 新規ユーザーの場合
+        console.log('新規ユーザー、プレイヤー作成画面へ');
+        navigate('/player-creation');
+      }
+    } catch (error) {
+      console.error('プレイヤー情報の取得エラー:', error);
+      
+      // エラーが404（プレイヤーが見つからない）の場合は新規作成へ
+      if ((error as any).status === 404) {
+        console.log('プレイヤーが見つからないため、新規作成画面へ');
+        navigate('/player-creation');
+      } else {
+        // その他のエラーの場合も一旦プレイヤー作成画面へ
+        console.error('予期しないエラーが発生しました:', error);
+        navigate('/player-creation');
+      }
     }
   };
 
