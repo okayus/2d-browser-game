@@ -173,6 +173,64 @@ export function BattleResultPage() {
   }, [currentUser, rewardProcessed]);
 
   /**
+   * 継続ボタン処理（Handle continue）
+   * @description マップ画面に戻る
+   */
+  const handleContinue = useCallback(() => {
+    // バトル結果データをクリア
+    sessionStorage.removeItem('battle_result');
+    sessionStorage.removeItem('battle_init');
+    navigate('/map');
+  }, [navigate]);
+
+  /**
+   * モンスター一覧表示（Show monster list）
+   * @description モンスター一覧画面に遷移
+   */
+  const handleShowMonsters = useCallback(() => {
+    // バトル結果データをクリア
+    sessionStorage.removeItem('battle_result');
+    sessionStorage.removeItem('battle_init');
+    navigate('/monsters');
+  }, [navigate]);
+
+  /**
+   * バトル敗北時の回復処理（Process defeat recovery）
+   * @description 敗北時にプレイヤーモンスターのHPを最大値に戻す
+   * @param result - バトル結果データ
+   */
+  const processDefeatRecovery = useCallback(async (result: BattleResult) => {
+    if (!currentUser || rewardProcessed) return;
+
+    setIsProcessingReward(true);
+
+    try {
+      console.log('バトル敗北：HP回復処理を開始...');
+      
+      // プレイヤーモンスターのHPを最大値に回復
+      const recoveredMonster = {
+        ...result.playerMonster,
+        currentHp: result.playerMonster.maxHp
+      };
+
+      await updatePlayerMonsterHp(recoveredMonster);
+      
+      console.log('HP回復処理が完了しました');
+      setRewardProcessed(true);
+
+      // 2秒後にマップ画面に自動遷移
+      setTimeout(() => {
+        handleContinue();
+      }, 2000);
+
+    } catch (error) {
+      console.error('HP回復処理中のエラー:', error);
+    } finally {
+      setIsProcessingReward(false);
+    }
+  }, [currentUser, rewardProcessed, handleContinue]);
+
+  /**
    * コンポーネント初期化（Component initialization）
    * @description バトル結果の読み込みと表示
    */
@@ -193,6 +251,9 @@ export function BattleResultPage() {
         // 報酬処理を開始
         if (result.status === 'captured' || result.status === 'victory') {
           processBattleRewards(result);
+        } else if (result.status === 'defeat') {
+          // 敗北時はHP回復処理を実行
+          processDefeatRecovery(result);
         }
 
       } catch (error) {
@@ -202,7 +263,7 @@ export function BattleResultPage() {
     };
 
     loadBattleResult();
-  }, [navigate, processBattleRewards]);
+  }, [navigate, processBattleRewards, processDefeatRecovery]);
 
   /**
    * プレイヤーモンスターのHP更新（Update player monster HP）
@@ -314,27 +375,6 @@ export function BattleResultPage() {
     }
   };
 
-  /**
-   * 継続ボタン処理（Handle continue）
-   * @description マップ画面に戻る
-   */
-  const handleContinue = () => {
-    // バトル結果データをクリア
-    sessionStorage.removeItem('battle_result');
-    sessionStorage.removeItem('battle_init');
-    navigate('/map');
-  };
-
-  /**
-   * モンスター一覧表示（Show monster list）
-   * @description モンスター一覧画面に遷移
-   */
-  const handleShowMonsters = () => {
-    // バトル結果データをクリア
-    sessionStorage.removeItem('battle_result');
-    sessionStorage.removeItem('battle_init');
-    navigate('/monsters');
-  };
 
   // ローディング中の表示
   if (isLoading) {
@@ -441,7 +481,17 @@ export function BattleResultPage() {
                 {/* 処理中表示 */}
                 {isProcessingReward && (
                   <div className="text-sm text-blue-600">
-                    報酬を処理中...
+                    {battleResult.status === 'defeat' 
+                      ? 'モンスターを回復中...' 
+                      : '報酬を処理中...'
+                    }
+                  </div>
+                )}
+
+                {/* 敗北時の自動遷移メッセージ */}
+                {battleResult.status === 'defeat' && rewardProcessed && (
+                  <div className="text-sm text-green-600">
+                    HPが回復しました！マップ画面に戻ります...
                   </div>
                 )}
               </div>
