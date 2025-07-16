@@ -462,6 +462,247 @@ app.put('/api/test/monsters/:monsterId', async (c) => {
   }
 });
 
+// テスト用：認証なしでモンスターを追加（開発環境のみ）
+app.post('/api/test/players/:playerId/monsters', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'This endpoint is only available in development mode' }, 403);
+  }
+  
+  const { drizzle } = await import('drizzle-orm/d1');
+  const { eq } = await import('drizzle-orm');
+  const schema = await import('./db/schema');
+  const { ロガー } = await import('./utils/logger');
+  
+  const db = drizzle(c.env.DB as D1Database, { schema });
+  const { playerId } = c.req.param();
+  
+  try {
+    const body = await c.req.json();
+    const { speciesId, speciesName } = body;
+    
+    if (!speciesId && !speciesName) {
+      return c.json({ success: false, error: 'speciesId or speciesName is required' }, 400);
+    }
+    
+    // 種族データを取得してモンスターの基本情報を取得
+    let species;
+    
+    // speciesIdが提供されている場合は、まずIDで検索
+    if (speciesId) {
+      species = await db
+        .select()
+        .from(schema.monsterSpecies)
+        .where(eq(schema.monsterSpecies.id, speciesId))
+        .get();
+    }
+    
+    // speciesIdで見つからない場合、またはspeciesNameが提供されている場合は名前で検索
+    if (!species) {
+      // フロントエンドのIDからデータベースの名前へのマッピング
+      const idToNameMap: Record<string, string> = {
+        'electric_mouse': 'でんきネズミ',
+        'fire_lizard': 'ほのおトカゲ',
+        'water_turtle': 'みずガメ',
+        'grass_seed': 'くさダネ',
+        'rock_snake': 'いわヘビ'
+      };
+      
+      const searchName = speciesName || idToNameMap[speciesId] || speciesId;
+      species = await db
+        .select()
+        .from(schema.monsterSpecies)
+        .where(eq(schema.monsterSpecies.name, searchName))
+        .get();
+    }
+    
+    if (!species) {
+      ロガー.警告('テスト環境：種族が見つかりません', { speciesId, speciesName });
+      return c.json({ success: false, error: 'Species not found' }, 404);
+    }
+    
+    // 新しいモンスターを追加
+    const { uuid生成 } = await import('./utils/uuid');
+    const newMonster = await db
+      .insert(schema.ownedMonsters)
+      .values({
+        id: uuid生成(),
+        playerId,
+        speciesId: species.id,
+        nickname: species.name, // デフォルトのニックネームは種族名
+        currentHp: species.baseHp,
+        maxHp: species.baseHp,
+        obtainedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning()
+      .get();
+    
+    ロガー.情報('テスト環境：モンスター追加成功', { playerId, speciesId, monsterId: newMonster.id });
+    
+    return c.json({
+      success: true,
+      message: 'モンスターが追加されました',
+      data: newMonster,
+    });
+    
+  } catch (error) {
+    ロガー.エラー('テスト環境：モンスター追加エラー', error instanceof Error ? error : new Error(String(error)));
+    return c.json({ success: false, error: 'モンスターの追加に失敗しました' }, 500);
+  }
+});
+
+// テスト用：認証なしでモンスターニックネーム更新（開発環境のみ）
+app.put('/api/test/monsters/:monsterId/nickname', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'This endpoint is only available in development mode' }, 403);
+  }
+
+  const { drizzle } = await import('drizzle-orm/d1');
+  const { eq } = await import('drizzle-orm');
+  const schema = await import('./db/schema');
+  const { ロガー } = await import('./utils/logger');
+  
+  const db = drizzle(c.env.DB as D1Database, { schema });
+  const { monsterId } = c.req.param();
+
+  try {
+    // リクエストボディを解析
+    const body = await c.req.json();
+    const { ニックネーム } = body;
+
+    // バリデーション
+    if (!ニックネーム || typeof ニックネーム !== 'string' || ニックネーム.trim() === '') {
+      return c.json({ 
+        success: false, 
+        error: '無効なニックネーム値です' 
+      }, 400);
+    }
+
+    // ニックネームの長さチェック
+    if (ニックネーム.length > 20) {
+      return c.json({ 
+        success: false, 
+        error: 'ニックネームは20文字以内にしてください' 
+      }, 400);
+    }
+
+    // モンスターの存在確認
+    const existingMonster = await db
+      .select()
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.id, monsterId))
+      .get();
+
+    if (!existingMonster) {
+      return c.json({
+        success: false,
+        error: 'モンスターが見つかりません'
+      }, 404);
+    }
+
+    // ニックネームを更新
+    const updatedMonster = await db
+      .update(schema.ownedMonsters)
+      .set({ 
+        nickname: ニックネーム.trim(),
+        updatedAt: new Date()
+      })
+      .where(eq(schema.ownedMonsters.id, monsterId))
+      .returning()
+      .get();
+
+    if (!updatedMonster) {
+      throw new Error('モンスターのニックネーム更新に失敗しました');
+    }
+
+    ロガー.情報('テスト環境：モンスターニックネーム更新成功', {
+      monsterId,
+      previousNickname: existingMonster.nickname,
+      newNickname: ニックネーム.trim()
+    });
+
+    return c.json({
+      success: true,
+      message: 'ニックネームを更新しました',
+      data: {
+        id: updatedMonster.id,
+        ニックネーム: updatedMonster.nickname
+      }
+    });
+
+  } catch (error) {
+    ロガー.エラー('テスト環境：モンスターニックネーム更新エラー', error instanceof Error ? error : new Error(String(error)));
+    return c.json({ 
+      success: false, 
+      error: 'ニックネームの更新に失敗しました' 
+    }, 500);
+  }
+});
+
+// テスト用：認証なしでモンスター解放（開発環境のみ）
+app.delete('/api/test/monsters/:monsterId', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'This endpoint is only available in development mode' }, 403);
+  }
+
+  const { drizzle } = await import('drizzle-orm/d1');
+  const { eq } = await import('drizzle-orm');
+  const schema = await import('./db/schema');
+  const { ロガー } = await import('./utils/logger');
+  
+  const db = drizzle(c.env.DB as D1Database, { schema });
+  const { monsterId } = c.req.param();
+
+  try {
+    // モンスターの存在確認
+    const existingMonster = await db
+      .select()
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.id, monsterId))
+      .get();
+
+    if (!existingMonster) {
+      return c.json({
+        success: false,
+        error: 'モンスターが見つかりません'
+      }, 404);
+    }
+
+    // モンスターを削除
+    const deletedMonster = await db
+      .delete(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.id, monsterId))
+      .returning()
+      .get();
+
+    if (!deletedMonster) {
+      throw new Error('モンスターの削除に失敗しました');
+    }
+
+    ロガー.情報('テスト環境：モンスター解放成功', {
+      monsterId,
+      nickname: existingMonster.nickname,
+      playerId: existingMonster.playerId
+    });
+
+    return c.json({
+      success: true,
+      message: 'モンスターを解放しました',
+      data: {
+        id: deletedMonster.id,
+        message: `${existingMonster.nickname || 'モンスター'}を解放しました`
+      }
+    });
+
+  } catch (error) {
+    ロガー.エラー('テスト環境：モンスター解放エラー', error instanceof Error ? error : new Error(String(error)));
+    return c.json({ 
+      success: false, 
+      error: 'モンスターの解放に失敗しました' 
+    }, 500);
+  }
+});
+
 // モンスターAPIのマウント
 app.route('/api', モンスターAPI);
 
