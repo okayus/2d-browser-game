@@ -111,6 +111,22 @@ export const MONSTER_TYPES = [
     icon: '💧',
     baseHp: 45,
     rarity: 'rare' as const
+  },
+  {
+    id: 'grass_seed' as const,
+    name: 'くさダネ',
+    description: '背中に大きな球根を持つ植物型モンスター',
+    icon: '🌱',
+    baseHp: 45,
+    rarity: 'common' as const
+  },
+  {
+    id: 'rock_snake' as const,
+    name: 'いわヘビ',
+    description: '岩でできた巨大な蛇型モンスター',
+    icon: '🐍',
+    baseHp: 50,
+    rarity: 'rare' as const
   }
 ]
 

@@ -291,6 +291,33 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           パスワードを忘れた方はこちら
         </a>
       </div>
+
+      {/* 開発環境用テストユーザーログイン */}
+      {!import.meta.env.PROD && (
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-500 mb-2 text-center">開発環境用テスト機能</p>
+          <button
+            onClick={async () => {
+              clearError();
+              setEmail('test@example.com');
+              setPassword('testpass123');
+              try {
+                await login('test@example.com', 'testpass123');
+                onSuccess?.();
+              } catch (error) {
+                console.error('テストユーザーログインエラー:', error);
+              }
+            }}
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+          >
+            テストユーザーでログイン
+          </button>
+          <p className="text-xs text-gray-400 mt-1 text-center">
+            test@example.com / testpass123
+          </p>
+        </div>
+      )}
     </div>
   );
 };

@@ -159,7 +159,14 @@ export function BattleResultPage() {
       await updatePlayerMonsterHp(result.playerMonster);
 
       // 捕獲成功の場合、新しいモンスターを獲得
+      console.log('バトル結果確認:', {
+        status: result.status,
+        hasCapturedMonster: !!result.capturedMonster,
+        capturedMonster: result.capturedMonster
+      });
+      
       if (result.status === 'captured' && result.capturedMonster) {
+        console.log('捕獲モンスター追加開始:', result.capturedMonster);
         await addCapturedMonster(playerId, result.capturedMonster);
       }
 
@@ -183,16 +190,6 @@ export function BattleResultPage() {
     navigate('/map');
   }, [navigate]);
 
-  /**
-   * モンスター一覧表示（Show monster list）
-   * @description モンスター一覧画面に遷移
-   */
-  const handleShowMonsters = useCallback(() => {
-    // バトル結果データをクリア
-    sessionStorage.removeItem('battle_result');
-    sessionStorage.removeItem('battle_init');
-    navigate('/monsters');
-  }, [navigate]);
 
   /**
    * バトル敗北時の回復処理（Process defeat recovery）
@@ -337,9 +334,15 @@ export function BattleResultPage() {
       
       if (isDevelopment) {
         console.log('開発環境：認証なしエンドポイントを使用（モンスター追加）');
-        // 開発環境用のテストエンドポイントが存在しない場合は処理をスキップ
-        console.warn('開発環境：モンスター追加のテストエンドポイントが未実装のため処理をスキップします');
-        return;
+        response = await fetch(`/api/test/players/${playerId}/monsters`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            speciesId: capturedMonster.speciesId
+          })
+        });
       } else {
         const token = await currentUser?.getIdToken();
         if (!token) throw new Error('認証トークンが取得できません');
@@ -354,20 +357,21 @@ export function BattleResultPage() {
             speciesId: capturedMonster.speciesId
           })
         });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'レスポンス解析エラー' }));
-          console.error('モンスター追加APIエラー:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorData
-          });
-          throw new Error(`捕獲したモンスターの追加に失敗: ${response.status} ${response.statusText}`);
-        }
-
-        const responseData = await response.json();
-        console.log('捕獲したモンスターを追加しました:', responseData);
       }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'レスポンス解析エラー' }));
+        console.error('モンスター追加APIエラー:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          endpoint: isDevelopment ? `/api/test/players/${playerId}/monsters` : `/api/players/${playerId}/monsters`
+        });
+        throw new Error(`捕獲したモンスターの追加に失敗: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('捕獲したモンスターを追加しました:', responseData);
 
     } catch (error) {
       console.error('モンスター追加エラー:', error);
@@ -572,16 +576,6 @@ export function BattleResultPage() {
               >
                 🗺️ マップに戻る
               </Button>
-              
-              {(battleResult.status === 'captured' || battleResult.status === 'victory') && (
-                <Button
-                  onClick={handleShowMonsters}
-                  variant="secondary"
-                  className="px-8 py-3 text-lg"
-                >
-                  🎒 モンスター一覧
-                </Button>
-              )}
             </div>
           </div>
         </main>

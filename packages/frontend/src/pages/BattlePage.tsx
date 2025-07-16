@@ -20,7 +20,7 @@ import {
   createBattleResult,
   switchTurn
 } from '../lib/battle-utils';
-import type { BattleState, BattleAction, WildMonster, BattlePlayerMonster } from '@monster-game/shared';
+import type { BattleState, BattleAction, WildMonster, BattlePlayerMonster, BattleResult } from '@monster-game/shared';
 import { getStorageData } from '../lib/utils';
 
 /**
@@ -542,7 +542,22 @@ export function BattlePage() {
    * @param finalState - 最終的なバトル状態
    */
   const handleBattleEnd = (finalState: BattleState) => {
-    const battleResult = createBattleResult(finalState);
+    let capturedMonster: BattleResult['capturedMonster'] = undefined;
+    
+    // 捕獲成功時に野生モンスターから捕獲モンスターデータを作成
+    if (finalState.status === 'captured') {
+      capturedMonster = {
+        id: `captured-${Date.now()}`, // 一時的なID
+        speciesId: finalState.wildMonster.speciesId,
+        speciesName: finalState.wildMonster.speciesName,
+        nickname: finalState.wildMonster.speciesName, // デフォルトのニックネーム
+        currentHp: finalState.wildMonster.maxHp, // 捕獲時は満タンHP
+        maxHp: finalState.wildMonster.maxHp
+      };
+      console.log('捕獲モンスターデータを作成:', capturedMonster);
+    }
+    
+    const battleResult = createBattleResult(finalState, capturedMonster);
     
     // バトル結果を保存
     sessionStorage.setItem('battle_result', JSON.stringify(battleResult));
