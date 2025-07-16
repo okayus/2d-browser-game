@@ -377,6 +377,91 @@ app.get('/api/test/players/:playerId/monsters', async (c) => {
   }
 });
 
+// テスト用：認証なしでモンスターHP更新（開発環境のみ）
+app.put('/api/test/monsters/:monsterId', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'This endpoint is only available in development mode' }, 403);
+  }
+
+  const { drizzle } = await import('drizzle-orm/d1');
+  const { eq } = await import('drizzle-orm');
+  const schema = await import('./db/schema');
+  const { ロガー } = await import('./utils/logger');
+  
+  const db = drizzle(c.env.DB as D1Database, { schema });
+  const { monsterId } = c.req.param();
+
+  try {
+    // リクエストボディを解析
+    const body = await c.req.json();
+    const { currentHp } = body;
+
+    // バリデーション
+    if (typeof currentHp !== 'number' || currentHp < 0) {
+      return c.json({ 
+        success: false, 
+        error: '無効なHP値です' 
+      }, 400);
+    }
+
+    // モンスターの存在確認
+    const existingMonster = await db
+      .select()
+      .from(schema.ownedMonsters)
+      .where(eq(schema.ownedMonsters.id, monsterId))
+      .get();
+
+    if (!existingMonster) {
+      return c.json({
+        success: false,
+        error: 'モンスターが見つかりません'
+      }, 404);
+    }
+
+    // HPが最大HPを超えないようにチェック
+    const finalHp = Math.min(currentHp, existingMonster.maxHp);
+
+    // HPを更新
+    const updatedMonster = await db
+      .update(schema.ownedMonsters)
+      .set({ 
+        currentHp: finalHp,
+        updatedAt: new Date()
+      })
+      .where(eq(schema.ownedMonsters.id, monsterId))
+      .returning()
+      .get();
+
+    if (!updatedMonster) {
+      throw new Error('モンスターの更新に失敗しました');
+    }
+
+    ロガー.情報('テスト環境：モンスターHP更新成功', {
+      monsterId,
+      previousHp: existingMonster.currentHp,
+      newHp: finalHp,
+      maxHp: existingMonster.maxHp
+    });
+
+    return c.json({
+      success: true,
+      message: 'モンスターのHPを更新しました',
+      data: {
+        id: updatedMonster.id,
+        currentHp: updatedMonster.currentHp,
+        maxHp: updatedMonster.maxHp
+      }
+    });
+
+  } catch (error) {
+    ロガー.エラー('テスト環境：モンスターHP更新エラー', error instanceof Error ? error : new Error(String(error)));
+    return c.json({ 
+      success: false, 
+      error: 'モンスターの更新に失敗しました' 
+    }, 500);
+  }
+});
+
 // モンスターAPIのマウント
 app.route('/api', モンスターAPI);
 

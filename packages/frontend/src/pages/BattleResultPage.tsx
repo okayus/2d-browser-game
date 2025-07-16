@@ -211,25 +211,50 @@ export function BattleResultPage() {
    */
   const updatePlayerMonsterHp = async (playerMonster: BattleResult['playerMonster']) => {
     try {
-      const token = await currentUser?.getIdToken();
-      if (!token) throw new Error('認証トークンが取得できません');
+      // 開発環境では認証なしのテストエンドポイントを使用
+      const isDevelopment = window.location.hostname === 'localhost';
+      let response: Response;
+      
+      if (isDevelopment) {
+        console.log('開発環境：認証なしエンドポイントを使用（モンスターHP更新）');
+        response = await fetch(`/api/test/monsters/${playerMonster.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            currentHp: playerMonster.currentHp
+          })
+        });
+      } else {
+        const token = await currentUser?.getIdToken();
+        if (!token) throw new Error('認証トークンが取得できません');
 
-      const response = await fetch(`/api/monsters/${playerMonster.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentHp: playerMonster.currentHp
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('プレイヤーモンスターのHP更新に失敗');
+        response = await fetch(`/api/monsters/${playerMonster.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            currentHp: playerMonster.currentHp
+          })
+        });
       }
 
-      console.log('プレイヤーモンスターのHPを更新しました');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'レスポンス解析エラー' }));
+        console.error('HP更新APIエラー:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          endpoint: isDevelopment ? `/api/test/monsters/${playerMonster.id}` : `/api/monsters/${playerMonster.id}`
+        });
+        throw new Error(`プレイヤーモンスターのHP更新に失敗: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('プレイヤーモンスターのHPを更新しました:', responseData);
 
     } catch (error) {
       console.error('HP更新エラー:', error);
@@ -245,26 +270,43 @@ export function BattleResultPage() {
    */
   const addCapturedMonster = async (playerId: string, capturedMonster: NonNullable<BattleResult['capturedMonster']>) => {
     try {
-      const token = await currentUser?.getIdToken();
-      if (!token) throw new Error('認証トークンが取得できません');
+      // 開発環境では認証なしのテストエンドポイントを使用
+      const isDevelopment = window.location.hostname === 'localhost';
+      let response: Response;
+      
+      if (isDevelopment) {
+        console.log('開発環境：認証なしエンドポイントを使用（モンスター追加）');
+        // 開発環境用のテストエンドポイントが存在しない場合は処理をスキップ
+        console.warn('開発環境：モンスター追加のテストエンドポイントが未実装のため処理をスキップします');
+        return;
+      } else {
+        const token = await currentUser?.getIdToken();
+        if (!token) throw new Error('認証トークンが取得できません');
 
-      const response = await fetch(`/api/players/${playerId}/monsters`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          speciesId: capturedMonster.speciesId
-        })
-      });
+        response = await fetch(`/api/players/${playerId}/monsters`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            speciesId: capturedMonster.speciesId
+          })
+        });
 
-      if (!response.ok) {
-        throw new Error('捕獲したモンスターの追加に失敗');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'レスポンス解析エラー' }));
+          console.error('モンスター追加APIエラー:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData
+          });
+          throw new Error(`捕獲したモンスターの追加に失敗: ${response.status} ${response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('捕獲したモンスターを追加しました:', responseData);
       }
-
-      const responseData = await response.json();
-      console.log('捕獲したモンスターを追加しました:', responseData);
 
     } catch (error) {
       console.error('モンスター追加エラー:', error);
