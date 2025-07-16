@@ -331,6 +331,19 @@ export function createBattleResult(
 }
 
 /**
+ * ターンを切り替える（Switch turn）
+ * @description 現在のターンから次のターンに切り替える
+ * @param currentTurn - 現在のターン
+ * @returns 次のターン
+ * @example
+ * const nextTurn = switchTurn('player'); // 'wild'を返す
+ * const nextTurn2 = switchTurn('wild'); // 'player'を返す
+ */
+export function switchTurn(currentTurn: 'player' | 'wild'): 'player' | 'wild' {
+  return currentTurn === 'player' ? 'wild' : 'player';
+}
+
+/**
  * SessionStorageにバトル状態を保存（Save battle state to SessionStorage）
  * @description ページリロード対応のためのバトル状態保存
  * @param battleState - 保存するバトル状態

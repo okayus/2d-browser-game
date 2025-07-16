@@ -17,7 +17,8 @@ import {
   attemptCapture,
   calculateHpPercentage,
   getHpBarColor,
-  createBattleResult
+  createBattleResult,
+  switchTurn
 } from '../lib/battle-utils';
 import type { BattleState, BattleAction, WildMonster, BattlePlayerMonster } from '@monster-game/shared';
 import { getStorageData } from '../lib/utils';
@@ -294,6 +295,25 @@ export function BattlePage() {
   }, [navigate]);
 
   /**
+   * 野生モンスターの自動ターン処理（Wild monster auto turn）
+   * @description 野生モンスターのターンになったら自動で実行
+   */
+  useEffect(() => {
+    if (!battleState || battleState.status !== 'ongoing' || isProcessing) {
+      return;
+    }
+
+    if (battleState.currentTurn === 'wild') {
+      console.log('野生モンスターの自動ターンを開始...');
+      const timer = setTimeout(() => {
+        executeWildMonsterTurn();
+      }, 1500); // 1.5秒後に自動実行
+
+      return () => clearTimeout(timer);
+    }
+  }, [battleState?.currentTurn, battleState?.status, isProcessing]);
+
+  /**
    * プレイヤーアクション処理（Handle player action）
    * @description プレイヤーが選択したアクションを処理
    * @param action - 選択されたアクション
@@ -325,8 +345,8 @@ export function BattlePage() {
 
       // プレイヤーアクション後の状態チェック
       if (newBattleState.status === 'ongoing') {
-        // 野生モンスターのターン
-        newBattleState = handleWildMonsterTurn(newBattleState);
+        // ターンを野生モンスターに切り替え（自動処理はuseEffectで実行）
+        newBattleState.currentTurn = switchTurn(newBattleState.currentTurn);
       }
 
       setBattleState(newBattleState);
@@ -475,9 +495,45 @@ export function BattlePage() {
       newState.battleLog.push(
         createLogEntry(`${currentState.playerMonster.nickname || currentState.playerMonster.speciesName}は倒れた...`, 'defeat')
       );
+    } else {
+      // バトルが継続する場合、ターンをプレイヤーに切り替え
+      newState.currentTurn = switchTurn(currentState.currentTurn);
     }
 
     return newState;
+  };
+
+  /**
+   * 野生モンスターのターン実行（Execute wild monster turn）
+   * @description 野生モンスターの自動ターン処理
+   */
+  const executeWildMonsterTurn = async () => {
+    if (!battleState || battleState.status !== 'ongoing' || battleState.currentTurn !== 'wild' || isProcessing) {
+      return;
+    }
+
+    console.log('野生モンスターのターンを実行中...');
+    setIsProcessing(true);
+
+    try {
+      // 野生モンスターのターン処理
+      const newBattleState = handleWildMonsterTurn(battleState);
+      
+      setBattleState(newBattleState);
+      saveBattleState(newBattleState);
+
+      // バトル終了チェック
+      if (newBattleState.status !== 'ongoing') {
+        setTimeout(() => {
+          handleBattleEnd(newBattleState);
+        }, 2000);
+      }
+
+    } catch (error) {
+      console.error('野生モンスターターン処理中のエラー:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   /**
@@ -606,11 +662,30 @@ export function BattlePage() {
                 />
               )}
 
+              {/* 野生モンスターターン表示 */}
+              {battleState.status === 'ongoing' && battleState.currentTurn === 'wild' && !isProcessing && (
+                <Card className="border-orange-200 bg-orange-50">
+                  <CardContent className="p-4 text-center">
+                    <div className="text-lg text-orange-700 mb-2">
+                      🤔 野生モンスターが行動を考えています...
+                    </div>
+                    <div className="text-sm text-orange-600">
+                      まもなく攻撃します
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* 処理中表示 */}
               {isProcessing && (
-                <Card>
+                <Card className="border-blue-200 bg-blue-50">
                   <CardContent className="p-4 text-center">
-                    <div className="text-lg">処理中...</div>
+                    <div className="text-lg text-blue-700 mb-2">
+                      {battleState.currentTurn === 'wild' ? '⚔️ 野生モンスターの攻撃中...' : '🎯 処理中...'}
+                    </div>
+                    <div className="text-sm text-blue-600">
+                      しばらくお待ちください
+                    </div>
                   </CardContent>
                 </Card>
               )}
