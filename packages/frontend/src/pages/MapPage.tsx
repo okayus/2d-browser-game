@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GameMap, PlayerPanel } from '../components/game'
 import { Button, Card, CardContent } from '../components/ui'
-import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES, getStorageData, setStorageData } from '../lib/utils'
+import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES, getStorageData, setStorageData, setSessionStorageData } from '../lib/utils'
 import { createRandomWildMonster, convertToBattlePlayerMonster } from '../lib/battle-utils'
 import { useAuth } from '../hooks'
 import { getMapData, validateMapData, MapData } from '../lib/mapData'
@@ -295,7 +295,7 @@ export function MapPage() {
         playerMonster: battlePlayerMonster
       }
 
-      setStorageData('battle_init', battleInitData)
+      setSessionStorageData('battle_init', battleInitData)
       
       // バトル画面に遷移
       navigate('/battle')

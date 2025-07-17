@@ -21,7 +21,7 @@ import {
   switchTurn
 } from '../lib/battle-utils';
 import type { BattleState, BattleAction, WildMonster, BattlePlayerMonster, BattleResult } from '@monster-game/shared';
-import { getStorageData } from '../lib/utils';
+import { getStorageData, getSessionStorageData } from '../lib/utils';
 
 /**
  * HPバーコンポーネント（HP bar component）
@@ -234,7 +234,7 @@ export function BattlePage() {
         }
 
         // 新規バトルの初期化データを取得
-        const battleInitData = getStorageData<{
+        const battleInitData = getSessionStorageData<{
           wildMonsterSpeciesId: string;
           playerMonsterId: string;
           wildMonster?: WildMonster;

@@ -45,6 +45,46 @@ export function setStorageData<T>(key: string, data: T): boolean {
 }
 
 /**
+ * SessionStorageからデータを取得
+ * @param key - ストレージキー
+ * @param defaultValue - デフォルト値
+ * @returns 取得したデータ
+ */
+export function getSessionStorageData<T>(key: string, defaultValue: T | null = null): T | null {
+  try {
+    const data = sessionStorage.getItem(key)
+    if (!data) return defaultValue
+    
+    // JSON.parseを試行
+    try {
+      return JSON.parse(data)
+    } catch {
+      // JSON.parseに失敗した場合はプレーンテキストとして扱う
+      return data as unknown as T
+    }
+  } catch (error) {
+    console.warn('SessionStorageの読み込みに失敗:', error)
+    return defaultValue
+  }
+}
+
+/**
+ * SessionStorageにデータを保存
+ * @param key - ストレージキー
+ * @param data - 保存するデータ
+ * @returns 保存成功の可否
+ */
+export function setSessionStorageData<T>(key: string, data: T): boolean {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(data))
+    return true
+  } catch (error) {
+    console.warn('SessionStorageの保存に失敗:', error)
+    return false
+  }
+}
+
+/**
  * プレイヤー名のバリデーション
  * @param name - プレイヤー名
  * @returns バリデーション結果
