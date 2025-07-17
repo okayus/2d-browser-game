@@ -73,7 +73,10 @@ app.get('/health', (c) => {
  * データベース初期化ミドルウェア
  */
 app.use('/api/*', async (c, next) => {
-  await データベース初期化(c.env.DB as D1Database);
+  // テスト環境でDBが未定義の場合はスキップ
+  if (c.env?.DB) {
+    await データベース初期化(c.env.DB as D1Database);
+  }
   await next();
 });
 
@@ -107,7 +110,7 @@ app.post('/api/players', async (c) => {
 
     // データベース接続の準備
     const { drizzle } = await import('drizzle-orm/d1');
-    const { eq, inArray } = await import('drizzle-orm');
+    const { eq } = await import('drizzle-orm');
     const schema = await import('./db/schema');
     const { uuid生成 } = await import('./utils/uuid');
     
@@ -272,6 +275,11 @@ app.get('/api/test', (c) => {
  */
 app.get('/api/players/me', async (c) => {
   try {
+    // テスト環境でFirebase設定が不足している場合は401エラーを返す
+    if (!c.env?.AUTH_KV || !c.env?.FIREBASE_PROJECT_ID) {
+      return c.json({ error: '認証が必要です' }, 401);
+    }
+    
     // Firebase認証チェック
     const authResult = await firebaseAuthMiddleware(c.req.raw, {
       AUTH_KV: c.env.AUTH_KV,
@@ -334,7 +342,7 @@ app.get('/api/players/me', async (c) => {
 
 // テスト用：認証なしでモンスター一覧を取得（開発環境のみ）
 app.get('/api/test/players/:playerId/monsters', async (c) => {
-  if (c.env.ENVIRONMENT !== 'development') {
+  if (c.env['ENVIRONMENT'] !== 'development') {
     return c.json({ error: 'This endpoint is only available in development mode' }, 403);
   }
 
@@ -379,7 +387,7 @@ app.get('/api/test/players/:playerId/monsters', async (c) => {
 
 // テスト用：認証なしでモンスターHP更新（開発環境のみ）
 app.put('/api/test/monsters/:monsterId', async (c) => {
-  if (c.env.ENVIRONMENT !== 'development') {
+  if (c.env['ENVIRONMENT'] !== 'development') {
     return c.json({ error: 'This endpoint is only available in development mode' }, 403);
   }
 
@@ -464,7 +472,7 @@ app.put('/api/test/monsters/:monsterId', async (c) => {
 
 // テスト用：認証なしでモンスターを追加（開発環境のみ）
 app.post('/api/test/players/:playerId/monsters', async (c) => {
-  if (c.env.ENVIRONMENT !== 'development') {
+  if (c.env['ENVIRONMENT'] !== 'development') {
     return c.json({ error: 'This endpoint is only available in development mode' }, 403);
   }
   
@@ -553,7 +561,7 @@ app.post('/api/test/players/:playerId/monsters', async (c) => {
 
 // テスト用：認証なしでモンスターニックネーム更新（開発環境のみ）
 app.put('/api/test/monsters/:monsterId/nickname', async (c) => {
-  if (c.env.ENVIRONMENT !== 'development') {
+  if (c.env['ENVIRONMENT'] !== 'development') {
     return c.json({ error: 'This endpoint is only available in development mode' }, 403);
   }
 
@@ -641,7 +649,7 @@ app.put('/api/test/monsters/:monsterId/nickname', async (c) => {
 
 // テスト用：認証なしでモンスター解放（開発環境のみ）
 app.delete('/api/test/monsters/:monsterId', async (c) => {
-  if (c.env.ENVIRONMENT !== 'development') {
+  if (c.env['ENVIRONMENT'] !== 'development') {
     return c.json({ error: 'This endpoint is only available in development mode' }, 403);
   }
 

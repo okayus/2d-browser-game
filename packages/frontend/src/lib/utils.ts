@@ -12,7 +12,15 @@
 export function getStorageData<T>(key: string, defaultValue: T | null = null): T | null {
   try {
     const data = localStorage.getItem(key)
-    return data ? JSON.parse(data) : defaultValue
+    if (!data) return defaultValue
+    
+    // プレーンテキストかJSONかを判定
+    try {
+      return JSON.parse(data)
+    } catch {
+      // JSON.parseに失敗した場合はプレーンテキストとして扱う
+      return data as unknown as T
+    }
   } catch (error) {
     console.warn('LocalStorageの読み込みに失敗:', error)
     return defaultValue

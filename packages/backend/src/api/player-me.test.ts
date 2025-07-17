@@ -6,15 +6,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../index'; // 実際のアプリケーションをインポート
 
-// モックデータ
-const mockFirebaseUid = 'test-firebase-uid-123';
-const mockPlayer = {
-  id: 'player-123',
-  name: 'テストプレイヤー',
-  firebaseUid: mockFirebaseUid,
-  createdAt: new Date('2025-01-01T00:00:00Z'),
-  updatedAt: new Date('2025-01-01T00:00:00Z'),
-};
 
 describe('GET /api/players/me', () => {
   beforeEach(() => {
