@@ -14,13 +14,19 @@ export function getStorageData<T>(key: string, defaultValue: T | null = null): T
     const data = localStorage.getItem(key)
     if (!data) return defaultValue
     
-    // プレーンテキストかJSONかを判定
-    try {
-      return JSON.parse(data)
-    } catch {
-      // JSON.parseに失敗した場合はプレーンテキストとして扱う
-      return data as unknown as T
+    // JSONらしい文字列（{または[で始まる）のみJSON.parseを試行
+    const trimmedData = data.trim()
+    if (trimmedData.startsWith('{') || trimmedData.startsWith('[')) {
+      try {
+        return JSON.parse(data)
+      } catch {
+        // JSON.parseに失敗した場合はプレーンテキストとして扱う
+        return data as unknown as T
+      }
     }
+    
+    // プレーンテキストとして扱う
+    return data as unknown as T
   } catch (error) {
     console.warn('LocalStorageの読み込みに失敗:', error)
     return defaultValue
@@ -35,7 +41,13 @@ export function getStorageData<T>(key: string, defaultValue: T | null = null): T
  */
 export function setStorageData<T>(key: string, data: T): boolean {
   try {
-    localStorage.setItem(key, JSON.stringify(data))
+    // プリミティブ値（文字列、数値、真偽値）は文字列として直接保存
+    if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
+      localStorage.setItem(key, String(data))
+    } else {
+      // オブジェクトや配列はJSON形式で保存
+      localStorage.setItem(key, JSON.stringify(data))
+    }
     return true
   } catch (error) {
     console.warn('LocalStorageの保存に失敗:', error)

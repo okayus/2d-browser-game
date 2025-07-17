@@ -323,7 +323,7 @@ describe('プレイヤー名バリデーション', () => {
 describe('モンスター関連の関数', () => {
   describe('MONSTER_TYPES定数', () => {
     it('正しい数のモンスターが定義されている', () => {
-      expect(MONSTER_TYPES).toHaveLength(3)
+      expect(MONSTER_TYPES).toHaveLength(5)
     })
 
     it('各モンスターが必要なプロパティを持つ', () => {
