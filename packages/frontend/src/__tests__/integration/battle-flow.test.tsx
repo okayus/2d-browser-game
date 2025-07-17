@@ -3,12 +3,13 @@
  * マップ画面からバトル画面への遷移を検証
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { MapPage } from '../../pages/MapPage';
 import { BattlePage } from '../../pages/BattlePage';
 import { AuthContext } from '../../contexts/AuthContext';
+import { User } from 'firebase/auth';
 
 // モック用の設定
 const mockNavigate = vi.fn();
@@ -56,7 +57,7 @@ global.fetch = vi.fn();
 
 // AuthContext Provider のモック
 const mockAuthContextValue = {
-  currentUser: mockCurrentUser as any,
+  currentUser: mockCurrentUser as unknown as User | null,
   loading: false,
   error: null,
   login: vi.fn(),
@@ -114,10 +115,10 @@ describe('バトルフロー統合テスト', () => {
         count: 1
       };
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockApiResponse
-      });
+      } as Response);
 
       render(
         <TestWrapper>
@@ -163,10 +164,10 @@ describe('バトルフロー統合テスト', () => {
         count: 0
       };
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockApiResponse
-      });
+      } as Response);
 
       render(
         <TestWrapper>
@@ -276,7 +277,7 @@ describe('バトルフロー統合テスト', () => {
   describe('ネットワークエラーの処理', () => {
     it('APIエラーが発生した場合、適切にエラーを処理する', async () => {
       // APIエラーのモック
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network Error'));
+      (global.fetch as MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error('Network Error'));
 
       render(
         <TestWrapper>
@@ -304,11 +305,11 @@ describe('バトルフロー統合テスト', () => {
 
     it('APIが404エラーを返した場合、適切にエラーを処理する', async () => {
       // 404エラーのモック
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found'
-      });
+      } as Response);
 
       render(
         <TestWrapper>

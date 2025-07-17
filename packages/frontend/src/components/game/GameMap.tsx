@@ -165,7 +165,7 @@ export function GameMap({
         case 'd':
           deltaX = 1
           break
-        case ' ':
+        case ' ': {
           // スペースキーで現在地の情報を表示
           event.preventDefault()
           const currentPosition = playerPositionRef.current
@@ -174,6 +174,7 @@ export function GameMap({
             onTileSelect(currentPosition, tile)
           }
           return
+        }
         default:
           return
       }
@@ -259,7 +260,7 @@ export function GameMap({
         mapElement.removeEventListener('touchend', handleTouchEnd)
       }
     }
-  }, [])
+  }, [movePlayer])
 
 
   /**

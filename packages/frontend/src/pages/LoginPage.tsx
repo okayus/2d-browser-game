@@ -44,8 +44,8 @@ export function LoginPage() {
         console.log('既存プレイヤーを検出:', player);
         
         // LocalStorageにプレイヤー情報を保存
-        setStorageData('player_id', (player as any).id);
-        setStorageData('player_name', (player as any).name);
+        setStorageData('player_id', player.id);
+        setStorageData('player_name', player.name);
         setStorageData('game_state', 'playing');
         
         // マップ画面へ遷移
@@ -59,7 +59,7 @@ export function LoginPage() {
       console.error('プレイヤー情報の取得エラー:', error);
       
       // エラーが404（プレイヤーが見つからない）の場合は新規作成へ
-      if ((error as any).status === 404) {
+      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
         console.log('プレイヤーが見つからないため、新規作成画面へ');
         navigate('/player-creation');
       } else {

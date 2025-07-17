@@ -2,7 +2,7 @@
  * バトル画面コンポーネント
  * 初学者向け: ターン制バトルシステムの実装例
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, CardContent } from '../components/ui';
 import { 
@@ -311,7 +311,7 @@ export function BattlePage() {
 
       return () => clearTimeout(timer);
     }
-  }, [battleState?.currentTurn, battleState?.status, isProcessing]);
+  }, [battleState, isProcessing]);
 
   /**
    * プレイヤーアクション処理（Handle player action）
@@ -507,7 +507,7 @@ export function BattlePage() {
    * 野生モンスターのターン実行（Execute wild monster turn）
    * @description 野生モンスターの自動ターン処理
    */
-  const executeWildMonsterTurn = async () => {
+  const executeWildMonsterTurn = useCallback(async () => {
     if (!battleState || battleState.status !== 'ongoing' || battleState.currentTurn !== 'wild' || isProcessing) {
       return;
     }
@@ -534,7 +534,7 @@ export function BattlePage() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [battleState, isProcessing]);
 
   /**
    * バトル終了処理（Handle battle end）

@@ -237,7 +237,8 @@ export function updateHp(currentHp: number, damage: number): number {
  *   console.log('捕獲のチャンス！');
  * }
  */
-export function canCaptureWildMonster(wildMonster: WildMonster): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function canCaptureWildMonster(_wildMonster: WildMonster): boolean {
   // デバッグ用: 常に捕獲可能
   console.log('デバッグ: 捕獲可能判定を常にtrueに設定');
   return true;

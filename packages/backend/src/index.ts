@@ -511,8 +511,8 @@ app.post('/api/test/players/:playerId/monsters', async (c) => {
         'electric_mouse': 'でんきネズミ',
         'fire_lizard': 'ほのおトカゲ',
         'water_turtle': 'みずガメ',
-        'grass_seed': 'くさダネ',
-        'rock_snake': 'いわヘビ'
+        'grass_seed': 'くさモグラ',
+        'rock_snake': 'いわゴーレム'
       };
       
       const searchName = speciesName || idToNameMap[speciesId] || speciesId;

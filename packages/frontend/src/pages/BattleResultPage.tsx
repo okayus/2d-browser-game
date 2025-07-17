@@ -267,7 +267,7 @@ export function BattleResultPage() {
    * @description バトル後のプレイヤーモンスターHP更新API呼び出し
    * @param playerMonster - 更新するプレイヤーモンスター
    */
-  const updatePlayerMonsterHp = async (playerMonster: BattleResult['playerMonster']) => {
+  const updatePlayerMonsterHp = useCallback(async (playerMonster: BattleResult['playerMonster']) => {
     try {
       // 開発環境では認証なしのテストエンドポイントを使用
       const isDevelopment = window.location.hostname === 'localhost';
@@ -318,7 +318,7 @@ export function BattleResultPage() {
       console.error('HP更新エラー:', error);
       throw error;
     }
-  };
+  }, [currentUser]);
 
   /**
    * 捕獲したモンスターの追加（Add captured monster）
@@ -326,7 +326,7 @@ export function BattleResultPage() {
    * @param playerId - プレイヤーID
    * @param capturedMonster - 捕獲したモンスター
    */
-  const addCapturedMonster = async (playerId: string, capturedMonster: NonNullable<BattleResult['capturedMonster']>) => {
+  const addCapturedMonster = useCallback(async (playerId: string, capturedMonster: NonNullable<BattleResult['capturedMonster']>) => {
     try {
       // 開発環境では認証なしのテストエンドポイントを使用
       const isDevelopment = window.location.hostname === 'localhost';
@@ -377,7 +377,7 @@ export function BattleResultPage() {
       console.error('モンスター追加エラー:', error);
       throw error;
     }
-  };
+  }, [currentUser]);
 
 
   // ローディング中の表示
