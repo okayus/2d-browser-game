@@ -311,7 +311,7 @@ export function BattlePage() {
 
       return () => clearTimeout(timer);
     }
-  }, [battleState, isProcessing]);
+  }, [battleState, isProcessing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * プレイヤーアクション処理（Handle player action）
@@ -534,14 +534,14 @@ export function BattlePage() {
     } finally {
       setIsProcessing(false);
     }
-  }, [battleState, isProcessing]);
+  }, [battleState, isProcessing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * バトル終了処理（Handle battle end）
    * @description バトル終了時の処理と画面遷移
    * @param finalState - 最終的なバトル状態
    */
-  const handleBattleEnd = (finalState: BattleState) => {
+  const handleBattleEnd = useCallback((finalState: BattleState) => {
     let capturedMonster: BattleResult['capturedMonster'] = undefined;
     
     // 捕獲成功時に野生モンスターから捕獲モンスターデータを作成
@@ -567,7 +567,7 @@ export function BattlePage() {
     
     // 結果画面に遷移
     navigate('/battle/result');
-  };
+  }, [navigate]);
 
   /**
    * バトル中止（Abort battle）

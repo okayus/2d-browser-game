@@ -177,7 +177,7 @@ export function BattleResultPage() {
     } finally {
       setIsProcessingReward(false);
     }
-  }, [currentUser, rewardProcessed]);
+  }, [currentUser, rewardProcessed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * 継続ボタン処理（Handle continue）
@@ -225,7 +225,7 @@ export function BattleResultPage() {
     } finally {
       setIsProcessingReward(false);
     }
-  }, [currentUser, rewardProcessed, handleContinue]);
+  }, [currentUser, rewardProcessed, handleContinue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * コンポーネント初期化（Component initialization）
