@@ -228,34 +228,32 @@ export function updateHp(currentHp: number, damage: number): number {
 
 /**
  * 捕獲可能判定（Check if capture is possible）
- * @description 野生モンスターが捕獲可能な状態かチェック（デバッグ用: 常に捕獲可能）
+ * @description 野生モンスターが捕獲可能な状態かチェック（HP50%以下で捕獲可能）
  * @param wildMonster - 野生モンスター
- * @returns 捕獲可能な場合はtrue（デバッグ用: 常にtrue）
+ * @returns HP50%以下の場合はtrue
  * @example
  * const canCapture = canCaptureWildMonster(wildMonster);
  * if (canCapture) {
  *   console.log('捕獲のチャンス！');
  * }
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function canCaptureWildMonster(_wildMonster: WildMonster): boolean {
-  // デバッグ用: 常に捕獲可能
-  console.log('デバッグ: 捕獲可能判定を常にtrueに設定');
-  return true;
+export function canCaptureWildMonster(wildMonster: WildMonster): boolean {
+  // HP50%以下で捕獲可能
+  const hpPercent = (wildMonster.currentHp / wildMonster.maxHp) * 100;
+  return hpPercent <= 50;
 }
 
 /**
  * 捕獲成功判定（Determine capture success）
- * @description 捕獲試行の成功・失敗を判定
- * @returns 成功の場合はtrue（デバッグ用: 100%の確率）
+ * @description 捕獲試行の成功・失敗を判定（60%の確率で成功）
+ * @returns 成功の場合はtrue（60%の確率）
  * @example
  * const success = attemptCapture();
  * console.log(success ? '捕獲成功！' : '捕獲失敗...');
  */
 export function attemptCapture(): boolean {
-  // デバッグ用: 100%の確率で成功
-  console.log('デバッグ: 捕獲確率100%に設定');
-  return true;
+  // 60%の確率で捕獲成功
+  return Math.random() < 0.6;
 }
 
 /**
