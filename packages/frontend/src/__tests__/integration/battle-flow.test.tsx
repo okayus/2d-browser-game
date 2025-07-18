@@ -78,7 +78,25 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('バトルフロー統合テスト', () => {
   beforeEach(() => {
+    // 全てのモックをクリア
     vi.clearAllMocks();
+    
+    // navigate モックをリセット
+    mockNavigate.mockClear();
+    
+    // sessionStorage モックを完全にリセット
+    mockSessionStorage.getItem.mockClear();
+    mockSessionStorage.setItem.mockClear();
+    mockSessionStorage.removeItem.mockClear();
+    mockSessionStorage.clear.mockClear();
+    
+    // localStorage モックを完全にリセット
+    mockLocalStorage.getItem.mockClear();
+    mockLocalStorage.setItem.mockClear();
+    mockLocalStorage.removeItem.mockClear();
+    mockLocalStorage.clear.mockClear();
+    
+    // localStorage のデフォルト実装を設定
     mockLocalStorage.getItem.mockImplementation((key) => {
       const mockData = {
         player_id: 'test-player-id',
@@ -93,6 +111,12 @@ describe('バトルフロー統合テスト', () => {
       };
       return mockData[key as keyof typeof mockData] || null;
     });
+    
+    // sessionStorage のデフォルト実装（空の状態）
+    mockSessionStorage.getItem.mockImplementation(() => null);
+    
+    // DOM をクリア（テスト間の干渉を防ぐ）
+    document.body.innerHTML = '';
   });
 
   describe('マップ画面での正常なモンスターエンカウント', () => {
@@ -218,10 +242,20 @@ describe('バトルフロー統合テスト', () => {
         }
       };
 
+      // sessionStorage モックを個別に設定（他のテストの影響を排除）
+      mockSessionStorage.getItem.mockReset();
+      mockSessionStorage.setItem.mockReset();
+      mockSessionStorage.removeItem.mockReset();
+      mockSessionStorage.clear.mockReset();
+      
+      // 完全に新しいmockImplementationを設定
       mockSessionStorage.getItem.mockImplementation((key) => {
         if (key === 'battle_init') {
+          console.log('sessionStorage.getItem called with key:', key);
+          console.log('returning battle init data:', mockBattleInitData);
           return JSON.stringify(mockBattleInitData);
         }
+        console.log('sessionStorage.getItem called with key:', key, 'returning null');
         return null;
       });
 
@@ -242,10 +276,18 @@ describe('バトルフロー統合テスト', () => {
         expect(screen.getByText('ピカピカ')).toBeInTheDocument();
       });
 
-      // アクションボタンが表示されることを確認
-      expect(screen.getByText('⚔️ たたかう')).toBeInTheDocument();
-      expect(screen.getByText('🎯 つかまえる')).toBeInTheDocument();
-      expect(screen.getByText('🏃 にげる')).toBeInTheDocument();
+      // プレイヤーのターンになるまで待機（野生モンスターの自動ターンが終わるまで）
+      await waitFor(() => {
+        // 「あなたのターン」が表示されることを確認
+        expect(screen.queryByText('あなたのターン')).toBeInTheDocument();
+      }, { timeout: 10000 });
+
+      // アクションボタンが表示されることを確認（プレイヤーターン開始後）
+      await waitFor(() => {
+        expect(screen.getByText('⚔️ たたかう')).toBeInTheDocument();
+        expect(screen.getByText('🎯 つかまえる')).toBeInTheDocument();
+        expect(screen.getByText('🏃 にげる')).toBeInTheDocument();
+      }, { timeout: 5000 });
     });
 
     it('無効なバトル初期化データの場合、マップ画面に戻る', async () => {
