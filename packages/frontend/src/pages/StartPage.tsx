@@ -4,9 +4,10 @@
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getStorageData } from '../lib/utils'
+import { getStorageData, setStorageData } from '../lib/utils'
 import { usePlayer } from '../hooks'
 import { useAuth } from '../contexts/AuthContext'
+import { playerApi } from '../lib/api'
 
 /**
  * スタート画面のメインコンポーネント
@@ -20,14 +21,12 @@ export function StartPage() {
   const { currentUser, loading: authLoading, logout } = useAuth()
   
   // プレイヤー管理フック
-  const { error: playerError, clearError } = usePlayer()
+  const { clearError } = usePlayer()
   
   // コンポーネントの状態管理
   const [success, setSuccess] = useState('')
   const [hasExistingGame, setHasExistingGame] = useState(false)
-  
-  // エラーは usePlayer フックから取得
-  const error = playerError
+  const [error, setError] = useState('')
 
   /**
    * コンポーネント初期化時の処理
@@ -77,19 +76,50 @@ export function StartPage() {
 
   /**
    * 既存ゲームの続行処理
+   * /api/players/meでプレイヤー情報を確認してから適切な画面へ遷移
    */
-  const handleContinueGame = () => {
-    const gameState = getStorageData<string>('game_state', 'start')
-    const selectedMonster = getStorageData('selected_monster')
-    
-    if (selectedMonster && gameState === 'playing') {
-      // マップ画面に遷移
-      setSuccess('ゲームを再開します...')
-      setTimeout(() => navigate('/map'), 1000)
-    } else {
-      // プレイヤー作成画面に遷移
-      setSuccess('プレイヤー作成画面に移動します...')
-      setTimeout(() => navigate('/player-creation'), 1000)
+  const handleContinueGame = async () => {
+    if (!currentUser) {
+      setError('ログインが必要です')
+      return
+    }
+
+    try {
+      console.log('既存プレイヤー情報を確認中...')
+      
+      // Firebase認証済みユーザーのプレイヤー情報を取得
+      const player = await playerApi.getCurrent()
+      
+      if (player) {
+        // 既存プレイヤーの場合
+        console.log('既存プレイヤーを検出:', player)
+        
+        // LocalStorageにプレイヤー情報を保存
+        setStorageData('player_id', (player as { id: string }).id)
+        setStorageData('player_name', (player as { name: string }).name)
+        setStorageData('game_state', 'playing')
+        
+        // マップ画面へ遷移
+        setSuccess('ゲームを再開します...')
+        setTimeout(() => navigate('/map'), 1000)
+      } else {
+        // プレイヤーが見つからない場合
+        console.log('プレイヤーが見つからない、新規作成画面へ')
+        setSuccess('プレイヤー作成画面に移動します...')
+        setTimeout(() => navigate('/player-creation'), 1000)
+      }
+    } catch (error) {
+      console.error('プレイヤー情報の取得エラー:', error)
+      
+      // エラーが404（プレイヤーが見つからない）の場合は新規作成へ
+      if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
+        console.log('プレイヤーが見つからないため、新規作成画面へ')
+        setSuccess('プレイヤー作成画面に移動します...')
+        setTimeout(() => navigate('/player-creation'), 1000)
+      } else {
+        // その他のエラー
+        setError('エラーが発生しました。もう一度お試しください。')
+      }
     }
   }
 

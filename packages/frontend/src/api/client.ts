@@ -20,6 +20,14 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
 /**
+ * 開発環境判定関数
+ * @returns 開発環境かどうかの判定結果
+ */
+function isDevelopment(): boolean {
+  return window.location.hostname === 'localhost';
+}
+
+/**
  * APIエラークラス
  * 
  * 初学者向けメモ：
@@ -157,7 +165,12 @@ export const monsterAPI = {
    * @returns 所持モンスター一覧
    */
   async listByPlayer(playerId: string): Promise<モンスター一覧レスポンス> {
-    return fetchAPI<モンスター一覧レスポンス>(`/players/${playerId}/monsters`);
+    if (isDevelopment()) {
+      console.log('開発環境：認証なしエンドポイントを使用（モンスター一覧取得）');
+      return fetchAPI<モンスター一覧レスポンス>(`/test/players/${playerId}/monsters`);
+    } else {
+      return fetchAPI<モンスター一覧レスポンス>(`/players/${playerId}/monsters`);
+    }
   },
 
   /**
@@ -168,10 +181,18 @@ export const monsterAPI = {
    * @returns 更新後のモンスター情報
    */
   async updateNickname(monsterId: string, nickname: string): Promise<API応答<{ id: string; ニックネーム: string }>> {
-    return fetchAPI<API応答<{ id: string; ニックネーム: string }>>(`/monsters/${monsterId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ ニックネーム: nickname }),
-    });
+    if (isDevelopment()) {
+      console.log('開発環境：認証なしエンドポイントを使用（ニックネーム更新）');
+      return fetchAPI<API応答<{ id: string; ニックネーム: string }>>(`/test/monsters/${monsterId}/nickname`, {
+        method: 'PUT',
+        body: JSON.stringify({ ニックネーム: nickname }),
+      });
+    } else {
+      return fetchAPI<API応答<{ id: string; ニックネーム: string }>>(`/monsters/${monsterId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ニックネーム: nickname }),
+      });
+    }
   },
 
   /**
@@ -181,9 +202,16 @@ export const monsterAPI = {
    * @returns 削除結果
    */
   async release(monsterId: string): Promise<API応答<{ message: string }>> {
-    return fetchAPI<API応答<{ message: string }>>(`/monsters/${monsterId}`, {
-      method: 'DELETE',
-    });
+    if (isDevelopment()) {
+      console.log('開発環境：認証なしエンドポイントを使用（モンスター解放）');
+      return fetchAPI<API応答<{ message: string }>>(`/test/monsters/${monsterId}`, {
+        method: 'DELETE',
+      });
+    } else {
+      return fetchAPI<API応答<{ message: string }>>(`/monsters/${monsterId}`, {
+        method: 'DELETE',
+      });
+    }
   },
 
   /**

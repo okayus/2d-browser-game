@@ -5,3 +5,4 @@
 
 export { usePlayer } from './usePlayer'
 export { useMonsters, type OwnedMonster } from './useMonsters'
+export { useAuth } from '../contexts/AuthContext'

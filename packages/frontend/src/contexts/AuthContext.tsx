@@ -57,7 +57,7 @@ interface AuthContextType extends AuthState {
  * - Contextの初期値はundefined（Providerで包まれていない場合はエラー）
  * - 型安全性のためにundefinedを許可して後でチェック
  */
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * AuthContext使用のためのカスタムフック

@@ -3,7 +3,7 @@
  * ルーティングとグローバルな設定を管理
  */
 import { Routes, Route } from 'react-router-dom'
-import { StartPage, LoginPage, RegisterPage, PlayerCreationPage, MapPage, MonsterListPage } from './pages'
+import { StartPage, LoginPage, RegisterPage, PlayerCreationPage, MapPage, MonsterListPage, BattlePage, BattleResultPage } from './pages'
 import { PrivateRoute, Header, AuthDebugTool } from './components'
 
 /**
@@ -43,6 +43,18 @@ function App() {
           <Route path="/monsters" element={
             <PrivateRoute>
               <MonsterListPage />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/battle" element={
+            <PrivateRoute>
+              <BattlePage />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/battle/result" element={
+            <PrivateRoute>
+              <BattleResultPage />
             </PrivateRoute>
           } />
           

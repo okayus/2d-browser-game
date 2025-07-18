@@ -68,7 +68,11 @@ export function MonsterListPage() {
     
     // 種族フィルタ
     if (filterSpecies !== 'all') {
-      filtered = filtered.filter(monster => monster.speciesId === filterSpecies)
+      // フロントエンド種族IDからMONSTER_TYPESを検索して名前を取得
+      const selectedSpecies = MONSTER_TYPES.find(species => species.id === filterSpecies)
+      if (selectedSpecies) {
+        filtered = filtered.filter(monster => monster.species.name === selectedSpecies.name)
+      }
     }
     
     // ソート

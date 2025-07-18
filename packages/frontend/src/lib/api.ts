@@ -8,6 +8,7 @@
  */
 
 import { auth } from './firebase';
+import { Player } from '@monster-game/shared';
 
 /**
  * APIレスポンスの基本型
@@ -207,8 +208,9 @@ export const playerApi = {
    * 初学者向けメモ：
    * - Firebase UIDを基にプレイヤー情報を取得
    * - ログイン後の初期画面で使用
+   * - TDD実装で追加されたエンドポイント
    */
-  getCurrent: async () => {
+  getCurrent: async (): Promise<Player> => {
     return await apiRequest('/api/players/me', {
       method: 'GET',
       requireAuth: true,

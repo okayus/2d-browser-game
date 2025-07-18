@@ -30,6 +30,7 @@
   // 環境変数設定
   // 初学者向けメモ：Firebase認証に必要な設定値
   "vars": {
+    "ENVIRONMENT": "development",
     "FIREBASE_PROJECT_ID": "monster-game-2d-browser",
     "PUBLIC_JWK_CACHE_KEY": "firebase-public-jwks",
     "JWT_CACHE_TTL": "3600"

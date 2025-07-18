@@ -58,12 +58,12 @@ export function useMonsters(): UseMonstersReturn {
   }, [])
 
   /**
-   * モンスター種族情報を取得
-   * @param speciesId - 種族ID
+   * モンスター種族情報を取得（種族名ベース）
+   * @param speciesName - 種族名
    * @returns 種族情報
    */
-  const getSpeciesInfo = (speciesId: string) => {
-    return MONSTER_TYPES.find(species => species.id === speciesId)
+  const getSpeciesInfoByName = (speciesName: string) => {
+    return MONSTER_TYPES.find(species => species.name === speciesName)
   }
 
   /**
@@ -85,26 +85,36 @@ export function useMonsters(): UseMonstersReturn {
           const monsterData = monster as {
             id: string;
             speciesId: string;
-            name: string;
-            level: number;
-            experiencePoints: number;
-            hitPoints: number;
-            maxHitPoints: number;
-            createdAt: string;
+            ニックネーム: string;
+            現在hp: number;
+            最大hp: number;
+            取得日時: number | Date | string;
+            種族: {
+              id: string;
+              名前: string;
+              基本hp: number;
+            } | null;
           };
-          const species = getSpeciesInfo(monsterData.speciesId)
+          
+          // 種族情報の取得（種族名ベース）
+          const speciesName = monsterData.種族?.名前 || '不明'
+          const species = getSpeciesInfoByName(speciesName)
           
           if (!species) {
-            console.warn(`未知の種族ID: ${monsterData.speciesId}`)
+            console.warn(`未知の種族名: ${speciesName}`)
             // デフォルトの種族情報を設定
             return {
               id: monsterData.id,
               playerId: playerId,
               speciesId: monsterData.speciesId,
-              nickname: monsterData.name,
-              currentHp: monsterData.hitPoints,
-              maxHp: monsterData.maxHitPoints,
-              capturedAt: monsterData.createdAt,
+              nickname: monsterData.ニックネーム,
+              currentHp: monsterData.現在hp,
+              maxHp: monsterData.最大hp,
+              capturedAt: monsterData.取得日時 
+                ? new Date(typeof monsterData.取得日時 === 'number' 
+                    ? monsterData.取得日時 * 1000 
+                    : monsterData.取得日時).toISOString()
+                : new Date().toISOString(), // フォールバック値
               species: MONSTER_TYPES[0] // フォールバック
             }
           }
@@ -113,10 +123,14 @@ export function useMonsters(): UseMonstersReturn {
             id: monsterData.id,
             playerId: playerId,
             speciesId: monsterData.speciesId,
-            nickname: monsterData.name,
-            currentHp: monsterData.hitPoints,
-            maxHp: monsterData.maxHitPoints,
-            capturedAt: monsterData.createdAt,
+            nickname: monsterData.ニックネーム,
+            currentHp: monsterData.現在hp,
+            maxHp: monsterData.最大hp,
+            capturedAt: monsterData.取得日時 
+              ? new Date(typeof monsterData.取得日時 === 'number' 
+                  ? monsterData.取得日時 * 1000 
+                  : monsterData.取得日時).toISOString()
+              : new Date().toISOString(), // フォールバック値
             species
           }
         })

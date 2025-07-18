@@ -1,41 +1,50 @@
 /**
- * バトル関連の型定義
- * 初学者向け: シンプルなバトルシステム
+ * バトルシステム関連の型定義
+ * 初学者向け: ターン制バトルの基本概念を学ぶ
  */
 
 /**
- * バトルの状態（Battle state）
- * @description バトルの進行状況を表すユニオン型
+ * バトルアクションの種類（Battle action types）
+ * @description プレイヤーが選択可能なアクション
  * @example
- * const state: BattleState = 'battle'; // バトル中
- * const state2: BattleState = 'capture'; // 捕獲試行中
- * const state3: BattleState = 'victory'; // 勝利
+ * const action: BattleAction = 'attack'; // 攻撃
+ * const action2: BattleAction = 'capture'; // 捕獲
+ * const action3: BattleAction = 'escape'; // 逃走
  */
-export type BattleState = 'battle' | 'capture' | 'victory' | 'defeat' | 'escape';
+export type BattleAction = 'attack' | 'capture' | 'escape';
 
 /**
- * バトルアクション（Battle action）
- * @description プレイヤーが選択可能なバトル行動
+ * バトルの状態（Battle status）
+ * @description 現在のバトルの進行状態を表す
  * @example
- * const action: BattleAction = 'たたかう'; // 攻撃
- * const action2: BattleAction = 'つかまえる'; // 捕獲
- * const action3: BattleAction = 'にげる'; // 逃走
+ * const status: BattleStatus = 'ongoing'; // 継続中
+ * const status2: BattleStatus = 'victory'; // 勝利
  */
-export type BattleAction = 'たたかう' | 'つかまえる' | 'にげる';
+export type BattleStatus = 'ongoing' | 'victory' | 'defeat' | 'escaped' | 'captured';
+
+/**
+ * ターンの種類（Turn types）
+ * @description 現在のターンがプレイヤーか野生モンスターかを示す
+ * @example
+ * const turn: BattleTurn = 'player'; // プレイヤーのターン
+ * const turn2: BattleTurn = 'wild'; // 野生モンスターのターン
+ */
+export type BattleTurn = 'player' | 'wild';
 
 /**
  * 野生モンスターの情報（Wild monster information）
- * @description バトル中の野生モンスターのデータ
+ * @description バトル時の野生モンスターデータ
  * @example
  * const wildMonster: WildMonster = {
- *   speciesId: "species-1",
+ *   speciesId: "electric_mouse",
  *   speciesName: "でんきネズミ",
- *   currentHp: 20,
- *   maxHp: 35
+ *   currentHp: 25,
+ *   maxHp: 35,
+ *   icon: "⚡"
  * };
  */
 export interface WildMonster {
-  /** 種族ID（Species identifier） */
+  /** 種族ID（Species ID） */
   speciesId: string;
   /** 種族名（Species name） */
   speciesName: string;
@@ -43,100 +52,171 @@ export interface WildMonster {
   currentHp: number;
   /** 最大HP（Maximum HP） */
   maxHp: number;
+  /** アイコン（Icon） */
+  icon: string;
 }
 
 /**
- * バトル状況（Battle information）
- * @description 現在進行中のバトルの状況データ
+ * バトル中のプレイヤーモンスター情報（Player monster in battle）
+ * @description バトル時のプレイヤーモンスターデータ
  * @example
- * const battleInfo: BattleInfo = {
- *   id: "battle-1",
- *   playerId: "player-1",
- *   wildMonster: { speciesId: "...", speciesName: "...", currentHp: 20, maxHp: 35 },
- *   state: 'battle',
- *   startedAt: "2025-07-10T00:00:00Z"
+ * const playerMonster: BattlePlayerMonster = {
+ *   id: "monster-123",
+ *   speciesId: "fire_lizard",
+ *   speciesName: "ほのおトカゲ",
+ *   nickname: "ファイア",
+ *   currentHp: 30,
+ *   maxHp: 40,
+ *   icon: "🔥"
  * };
  */
-export interface BattleInfo {
-  /** バトルの一意なID（Unique battle identifier） */
+export interface BattlePlayerMonster {
+  /** モンスターの個体ID（Monster instance ID） */
   id: string;
-  /** プレイヤーID（Player identifier） */
-  playerId: string;
-  /** 野生モンスター情報（Wild monster information） */
-  wildMonster: WildMonster;
-  /** 現在のバトル状態（Current battle state） */
-  state: BattleState;
-  /** バトル開始日時（Battle start timestamp） */
-  startedAt: string;
+  /** 種族ID（Species ID） */
+  speciesId: string;
+  /** 種族名（Species name） */
+  speciesName: string;
+  /** ニックネーム（Nickname） */
+  nickname: string | null;
+  /** 現在のHP（Current HP） */
+  currentHp: number;
+  /** 最大HP（Maximum HP） */
+  maxHp: number;
+  /** アイコン（Icon） */
+  icon: string;
 }
 
 /**
- * バトルアクション実行データ（Battle action execution data）
- * @description バトルアクション実行API呼び出し時に送信するデータ
+ * バトルログのエントリ（Battle log entry）
+ * @description バトル中のアクションや結果を記録
  * @example
- * const actionData: BattleActionData = {
- *   action: 'たたかう'
+ * const logEntry: BattleLogEntry = {
+ *   id: "log-1",
+ *   message: "でんきネズミに10ダメージを与えた！",
+ *   type: "attack",
+ *   timestamp: Date.now()
  * };
  */
-export interface BattleActionData {
-  /** 実行するアクション（Action to execute） */
-  action: BattleAction;
-}
-
-/**
- * バトルアクション結果（Battle action result）
- * @description バトルアクション実行後の結果データ
- * @example
- * const result: BattleActionResult = {
- *   battleInfo: { id: "...", playerId: "...", wildMonster: {...}, state: 'victory', startedAt: "..." },
- *   message: "でんきネズミを倒した！",
- *   capturedMonster: {
- *     id: "captured-1",
- *     playerId: "player-1",
- *     speciesId: "species-1",
- *     speciesName: "でんきネズミ",
- *     nickname: null,
- *     currentHp: 20,
- *     maxHp: 35,
- *     capturedAt: "2025-07-10T00:00:00Z"
- *   }
- * };
- */
-export interface BattleActionResult {
-  /** 更新されたバトル情報（Updated battle information） */
-  battleInfo: BattleInfo;
-  /** 結果メッセージ（Result message） */
+export interface BattleLogEntry {
+  /** ログエントリのID（Log entry ID） */
+  id: string;
+  /** ログメッセージ（Log message） */
   message: string;
-  /** 捕獲成功時の所持モンスター（捕獲成功時のみ）（Captured monster, only when capture succeeds） */
+  /** ログの種類（Log type） */
+  type: 'attack' | 'damage' | 'capture' | 'escape' | 'info' | 'victory' | 'defeat';
+  /** タイムスタンプ（Timestamp） */
+  timestamp: number;
+}
+
+/**
+ * バトル状態（Battle state）
+ * @description バトル全体の状態を管理する中心的なインターフェース
+ * @example
+ * const battleState: BattleState = {
+ *   id: "battle-123",
+ *   wildMonster: wildMonsterData,
+ *   playerMonster: playerMonsterData,
+ *   currentTurn: 'player',
+ *   status: 'ongoing',
+ *   battleLog: [],
+ *   turnCount: 1
+ * };
+ */
+export interface BattleState {
+  /** バトルの一意なID（Unique battle ID） */
+  id: string;
+  /** 野生モンスター（Wild monster） */
+  wildMonster: WildMonster;
+  /** プレイヤーモンスター（Player monster） */
+  playerMonster: BattlePlayerMonster;
+  /** 現在のターン（Current turn） */
+  currentTurn: BattleTurn;
+  /** バトルの状態（Battle status） */
+  status: BattleStatus;
+  /** バトルログ（Battle log） */
+  battleLog: BattleLogEntry[];
+  /** ターン数（Turn count） */
+  turnCount: number;
+}
+
+/**
+ * バトル結果（Battle result）
+ * @description バトル終了時の結果データ
+ * @example
+ * const result: BattleResult = {
+ *   status: 'captured',
+ *   capturedMonster: newMonsterData,
+ *   playerMonster: updatedPlayerMonster,
+ *   totalTurns: 5,
+ *   battleLog: allLogEntries
+ * };
+ */
+export interface BattleResult {
+  /** 最終的なバトル状態（Final battle status） */
+  status: BattleStatus;
+  /** 捕獲したモンスター（捕獲時のみ）（Captured monster, only when captured） */
   capturedMonster?: {
     id: string;
-    playerId: string;
     speciesId: string;
     speciesName: string;
-    nickname: string | null;
+    nickname: string;
     currentHp: number;
     maxHp: number;
-    capturedAt: string;
   };
+  /** バトル後のプレイヤーモンスター（Player monster after battle） */
+  playerMonster: BattlePlayerMonster;
+  /** 総ターン数（Total turns） */
+  totalTurns: number;
+  /** 全バトルログ（Complete battle log） */
+  battleLog: BattleLogEntry[];
+}
+
+/**
+ * バトル開始時のデータ（Battle initialization data）
+ * @description バトル開始時に必要な初期データ
+ * @example
+ * const initData: BattleInitData = {
+ *   playerId: "player-123",
+ *   playerMonsterId: "monster-456",
+ *   wildMonsterSpeciesId: "electric_mouse"
+ * };
+ */
+export interface BattleInitData {
+  /** プレイヤーID（Player ID） */
+  playerId: string;
+  /** 使用するプレイヤーモンスターのID（Player monster ID to use） */
+  playerMonsterId: string;
+  /** 遭遇する野生モンスターの種族ID（Wild monster species ID to encounter） */
+  wildMonsterSpeciesId: string;
 }
 
 // 後方互換性のためのエイリアス（Backward compatibility aliases）
 // 初学者向け：既存コードとの互換性を保ちながら段階的に移行するためのエイリアス
 
-/** @deprecated Use BattleState instead. バトル状態 → BattleState への移行用エイリアス */
-export type バトル状態 = BattleState;
-
 /** @deprecated Use BattleAction instead. バトルアクション → BattleAction への移行用エイリアス */
 export type バトルアクション = BattleAction;
+
+/** @deprecated Use BattleStatus instead. バトル状態 → BattleStatus への移行用エイリアス */
+export type バトル状態 = BattleStatus;
+
+/** @deprecated Use BattleTurn instead. バトルターン → BattleTurn への移行用エイリアス */
+export type バトルターン = BattleTurn;
 
 /** @deprecated Use WildMonster instead. 野生モンスター → WildMonster への移行用エイリアス */
 export type 野生モンスター = WildMonster;
 
-/** @deprecated Use BattleInfo instead. バトル情報 → BattleInfo への移行用エイリアス */
-export type バトル情報 = BattleInfo;
+/** @deprecated Use BattlePlayerMonster instead. バトルプレイヤーモンスター → BattlePlayerMonster への移行用エイリアス */
+export type バトルプレイヤーモンスター = BattlePlayerMonster;
 
-/** @deprecated Use BattleActionData instead. バトルアクション実行データ → BattleActionData への移行用エイリアス */
-export type バトルアクション実行データ = BattleActionData;
+/** @deprecated Use BattleLogEntry instead. バトルログエントリ → BattleLogEntry への移行用エイリアス */
+export type バトルログエントリ = BattleLogEntry;
 
-/** @deprecated Use BattleActionResult instead. バトルアクション結果 → BattleActionResult への移行用エイリアス */
-export type バトルアクション結果 = BattleActionResult;
+/** @deprecated Use BattleState instead. バトル全体状態 → BattleState への移行用エイリアス */
+export type バトル全体状態 = BattleState;
+
+/** @deprecated Use BattleResult instead. バトル結果 → BattleResult への移行用エイリアス */
+export type バトル結果 = BattleResult;
+
+/** @deprecated Use BattleInitData instead. バトル初期データ → BattleInitData への移行用エイリアス */
+export type バトル初期データ = BattleInitData;

@@ -70,20 +70,23 @@ const monsterListQuerySchema = z.object({
 });
 
 /**
- * ニックネーム更新スキーマ（Nickname update schema）
+ * モンスター更新スキーマ（Monster update schema）
  * 
  * 初学者向けメモ：（For beginners:）
- * - 1〜20文字の制限（1-20 character limit）
- * - 空文字は不可（Empty strings not allowed）
+ * - ニックネームまたはHPの更新が可能（Nickname or HP updates allowed）
+ * - 少なくとも一つのフィールドが必要（At least one field required）
  */
-const nicknameUpdateSchema = z.object({
-  nickname: z.string().min(1, 'ニックネームは必須です').max(20, 'ニックネームは20文字以内で入力してください'),
+const monsterUpdateSchema = z.object({
+  nickname: z.string().min(1, 'ニックネームは1文字以上で入力してください').max(20, 'ニックネームは20文字以内で入力してください').optional(),
+  currentHp: z.number().min(0, 'HPは0以上である必要があります').optional(),
+}).refine(data => data.nickname !== undefined || data.currentHp !== undefined, {
+  message: 'ニックネームまたはHPの少なくとも一つは必須です'
 });
 
 // 後方互換性のためのエイリアス（Backward compatibility aliases）
 const モンスター獲得スキーマ = monsterAcquisitionSchema;
 const モンスター一覧クエリスキーマ = monsterListQuerySchema;
-const ニックネーム更新スキーマ = nicknameUpdateSchema;
+const モンスター更新スキーマ = monsterUpdateSchema;
 
 /**
  * POST /api/players/:playerId/monsters - モンスター獲得
@@ -303,6 +306,7 @@ app.get(
       const baseQuery = db
         .select({
           id: schema.ownedMonsters.id,
+          speciesId: schema.ownedMonsters.speciesId,
           ニックネーム: schema.ownedMonsters.nickname,
           現在hp: schema.ownedMonsters.currentHp,
           最大hp: schema.ownedMonsters.maxHp,
@@ -352,17 +356,17 @@ app.get(
 );
 
 /**
- * PUT /api/monsters/:monsterId - ニックネーム変更
+ * PUT /api/monsters/:monsterId - モンスター情報更新
  * 
  * 初学者向けメモ：
  * - Firebase認証が必要
  * - モンスターの所有者確認
  * - 他人のモンスターは変更不可
- * - ニックネームのバリデーション
+ * - ニックネームまたはHPの更新が可能
  */
 app.put(
   '/monsters/:monsterId',
-  zValidator('json', ニックネーム更新スキーマ),
+  zValidator('json', モンスター更新スキーマ),
   async (c) => {
     // Firebase認証チェック
     const authResult = await firebaseAuthMiddleware(c.req.raw, {
@@ -378,7 +382,7 @@ app.put(
     // テスト環境では共有のDrizzleインスタンスを使用、本番環境では新規作成  
     const db = (c.env as { DRIZZLE_DB?: データベース型; DB: D1Database }).DRIZZLE_DB || drizzle(c.env.DB, { schema }) as データベース型;
     const { monsterId } = c.req.param();
-    const { nickname } = c.req.valid('json');
+    const { nickname, currentHp } = c.req.valid('json');
     const firebaseUid = authResult.user.uid;
 
     try {
@@ -416,35 +420,51 @@ app.put(
 
       const モンスター = モンスター情報.monster;
 
-      // ニックネーム更新
+      // 更新するフィールドを準備
+      const updateFields: {
+        updatedAt: Date;
+        nickname?: string;
+        currentHp?: number;
+      } = {
+        updatedAt: new Date()
+      };
+
+      if (nickname !== undefined) {
+        updateFields.nickname = nickname;
+      }
+
+      if (currentHp !== undefined) {
+        // HPが最大HPを超えないよう制限
+        const newHp = Math.min(currentHp, モンスター.maxHp);
+        updateFields.currentHp = Math.max(0, newHp); // 0以下にはならない
+      }
+
+      // モンスター情報更新
       await db
         .update(schema.ownedMonsters)
-        .set({ 
-          nickname,
-          updatedAt: new Date()
-        })
+        .set(updateFields)
         .where(eq(schema.ownedMonsters.id, monsterId));
 
-      ロガー.情報('ニックネーム変更成功', {
+      ロガー.情報('モンスター更新成功', {
         モンスターID: monsterId,
-        新ニックネーム: nickname,
+        更新フィールド: updateFields,
       });
 
       return c.json<HTTPResponseType>({
         success: true,
         data: {
           ...モンスター,
-          nickname,
+          ...updateFields,
         },
       });
 
     } catch (error) {
-      ロガー.エラー('ニックネーム変更中のエラー', error as Error, { monsterId });
+      ロガー.エラー('モンスター更新中のエラー', error as Error, { monsterId });
       return c.json<HTTPResponseType>({
         success: false,
         error: {
           code: 'INTERNAL_ERROR',
-          message: 'ニックネームの変更に失敗しました',
+          message: 'モンスター情報の更新に失敗しました',
         },
       }, 500);
     }

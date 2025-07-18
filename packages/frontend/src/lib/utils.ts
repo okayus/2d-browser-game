@@ -12,7 +12,15 @@
 export function getStorageData<T>(key: string, defaultValue: T | null = null): T | null {
   try {
     const data = localStorage.getItem(key)
-    return data ? JSON.parse(data) : defaultValue
+    if (!data) return defaultValue
+    
+    // 既存データとの互換性を保つため、JSON.parseを常に試行（元の実装に戻す）
+    try {
+      return JSON.parse(data)
+    } catch {
+      // JSON.parseに失敗した場合はプレーンテキストとして扱う
+      return data as unknown as T
+    }
   } catch (error) {
     console.warn('LocalStorageの読み込みに失敗:', error)
     return defaultValue
@@ -27,10 +35,51 @@ export function getStorageData<T>(key: string, defaultValue: T | null = null): T
  */
 export function setStorageData<T>(key: string, data: T): boolean {
   try {
+    // 既存データとの互換性を保つため、すべてJSON.stringifyで保存（元の実装に戻す）
     localStorage.setItem(key, JSON.stringify(data))
     return true
   } catch (error) {
     console.warn('LocalStorageの保存に失敗:', error)
+    return false
+  }
+}
+
+/**
+ * SessionStorageからデータを取得
+ * @param key - ストレージキー
+ * @param defaultValue - デフォルト値
+ * @returns 取得したデータ
+ */
+export function getSessionStorageData<T>(key: string, defaultValue: T | null = null): T | null {
+  try {
+    const data = sessionStorage.getItem(key)
+    if (!data) return defaultValue
+    
+    // JSON.parseを試行
+    try {
+      return JSON.parse(data)
+    } catch {
+      // JSON.parseに失敗した場合はプレーンテキストとして扱う
+      return data as unknown as T
+    }
+  } catch (error) {
+    console.warn('SessionStorageの読み込みに失敗:', error)
+    return defaultValue
+  }
+}
+
+/**
+ * SessionStorageにデータを保存
+ * @param key - ストレージキー
+ * @param data - 保存するデータ
+ * @returns 保存成功の可否
+ */
+export function setSessionStorageData<T>(key: string, data: T): boolean {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(data))
+    return true
+  } catch (error) {
+    console.warn('SessionStorageの保存に失敗:', error)
     return false
   }
 }
@@ -110,6 +159,22 @@ export const MONSTER_TYPES = [
     description: '水を操る亀のモンスター',
     icon: '💧',
     baseHp: 45,
+    rarity: 'rare' as const
+  },
+  {
+    id: 'grass_seed' as const,
+    name: 'くさダネ',
+    description: '背中に大きな球根を持つ植物型モンスター',
+    icon: '🌱',
+    baseHp: 45,
+    rarity: 'common' as const
+  },
+  {
+    id: 'rock_snake' as const,
+    name: 'いわヘビ',
+    description: '岩でできた巨大な蛇型モンスター',
+    icon: '🐍',
+    baseHp: 50,
     rarity: 'rare' as const
   }
 ]
