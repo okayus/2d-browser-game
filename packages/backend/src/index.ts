@@ -36,17 +36,47 @@ const app = new Hono<{ Bindings: Bindings }>();
  * - 開発環境では localhostからのアクセスを許可
  */
 app.use('/*', cors({
-  origin: [
-    'http://localhost:5173', // Vite開発サーバー
-    'http://localhost:5174', // Vite開発サーバー
-    'http://localhost:5175', // Vite開発サーバー
-    'http://localhost:3000', // 代替ポート
-    'https://monster-game-frontend.pages.dev', // 本番Pages URL
-    'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
-    'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
-    'https://67e4c43d.monster-game-frontend.pages.dev', // Firebase設定修正後URL
-    'https://*.pages.dev', // Cloudflare Pagesワイルドカード
-  ],
+  origin: (origin) => {
+    // デバッグ用ログ: 受信したOriginを記録
+    console.log('🔍 CORS Debug - Received Origin:', origin);
+    
+    // 明示的なOriginリスト
+    const allowedOrigins = [
+      'http://localhost:5173', // Vite開発サーバー
+      'http://localhost:5174', // Vite開発サーバー
+      'http://localhost:5175', // Vite開発サーバー
+      'http://localhost:3000', // 代替ポート
+      'https://monster-game-frontend.pages.dev', // 本番Pages URL
+      'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
+      'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
+      'https://67e4c43d.monster-game-frontend.pages.dev', // Firebase設定修正後URL
+      'https://5898f125.monster-game-frontend.pages.dev', // 最新のプロダクション URL
+    ];
+    
+    // Pages.devのサブドメインパターン（動的に生成されるURL対応）
+    const pagesDevPattern = /^https:\/\/[a-z0-9-]+\.monster-game-frontend\.pages\.dev$/;
+    
+    // Originが未定義の場合（同一Origin）は許可
+    if (!origin) {
+      console.log('🔍 CORS Debug - Origin is undefined, allowing');
+      return '*'; // 同一オリジンの場合は * を返す
+    }
+    
+    // 明示的なOriginチェック
+    const isExplicitlyAllowed = allowedOrigins.includes(origin);
+    console.log('🔍 CORS Debug - Explicitly allowed:', isExplicitlyAllowed);
+    
+    // Pages.devパターンチェック
+    const isPatternMatch = pagesDevPattern.test(origin);
+    console.log('🔍 CORS Debug - Pattern match:', isPatternMatch);
+    
+    // 最終判定
+    const isAllowed = isExplicitlyAllowed || isPatternMatch;
+    console.log('🔍 CORS Debug - Final decision:', isAllowed);
+    
+    // 許可された場合はそのオリジンを返し、拒否された場合は空文字列を返す
+    return isAllowed ? origin : '';
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
