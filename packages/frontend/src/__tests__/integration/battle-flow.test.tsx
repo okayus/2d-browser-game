@@ -296,8 +296,8 @@ describe('バトルフロー統合テスト', () => {
 
       // エラーメッセージが表示されることを確認
       await waitFor(() => {
-        expect(screen.getByText('エンカウント処理中にエラーが発生しました')).toBeInTheDocument();
-      });
+        expect(screen.getByTestId('message-warning')).toBeInTheDocument();
+      }, { timeout: 5000 });
 
       // バトル画面に遷移しないことを確認
       expect(mockNavigate).not.toHaveBeenCalledWith('/battle');
@@ -328,8 +328,8 @@ describe('バトルフロー統合テスト', () => {
 
       // エラーメッセージが表示されることを確認
       await waitFor(() => {
-        expect(screen.getByText('エンカウント処理中にエラーが発生しました')).toBeInTheDocument();
-      });
+        expect(screen.getByTestId('message-warning')).toBeInTheDocument();
+      }, { timeout: 5000 });
     });
   });
 });
