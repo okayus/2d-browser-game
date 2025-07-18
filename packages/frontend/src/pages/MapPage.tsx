@@ -332,12 +332,32 @@ export function MapPage() {
       }
     ]
     
-    // テスト用：常にモンスターエンカウントを発生させる
-    const randomEvent = events[0] // monster_encounterを強制選択
-    addMessage(randomEvent.message, randomEvent.messageType)
+    // イベント選択：テスト環境では常にモンスターエンカウント、本番環境では確率選択
+    const isTestEnvironment = process.env.NODE_ENV === 'test' || window.location.hostname === 'localhost'
+    let selectedEvent
+    
+    if (isTestEnvironment) {
+      // テスト環境：常にモンスターエンカウント
+      selectedEvent = events[0] // monster_encounter
+    } else {
+      // 本番環境：確率に基づいてランダムイベントを選択
+      const random = Math.random()
+      let cumulativeProbability = 0
+      selectedEvent = events[events.length - 1] // デフォルトは最後のイベント
+      
+      for (const event of events) {
+        cumulativeProbability += event.probability
+        if (random < cumulativeProbability) {
+          selectedEvent = event
+          break
+        }
+      }
+    }
+    
+    addMessage(selectedEvent.message, selectedEvent.messageType)
 
     // モンスターエンカウントの場合、バトル画面に遷移
-    if (randomEvent.type === 'monster_encounter') {
+    if (selectedEvent.type === 'monster_encounter') {
       await handleMonsterEncounter()
     }
   }, [addMessage, handleMonsterEncounter])
@@ -355,8 +375,12 @@ export function MapPage() {
     // 移動メッセージを追加
     addMessage(`座標 (${newPosition.x}, ${newPosition.y}) に移動しました`, 'info')
     
-    // テスト用：ランダムイベントの判定（100%の確率）
-    if (Math.random() < 1.0) {
+    // ランダムイベントの判定
+    // テスト環境では100%、本番環境では30%の確率でイベント発生
+    const isTestEnvironment = process.env.NODE_ENV === 'test' || window.location.hostname === 'localhost'
+    const eventRate = isTestEnvironment ? 1.0 : 0.3
+    
+    if (Math.random() < eventRate) {
       handleRandomEvent()
     }
   }, [addMessage, handleRandomEvent])
