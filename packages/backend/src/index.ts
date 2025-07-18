@@ -50,6 +50,7 @@ app.use('/*', cors({
       'http://localhost:3000', // 代替ポート
       'https://monster-game-frontend.pages.dev', // 本番Pages URL
       'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
+      'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
     ];
     
     // 完全一致するオリジンがあれば許可
