@@ -21,7 +21,7 @@ import {
   switchTurn
 } from '../lib/battle-utils';
 import type { BattleState, BattleAction, WildMonster, BattlePlayerMonster, BattleResult } from '@monster-game/shared';
-import { getStorageData, getSessionStorageData } from '../lib/utils';
+import { getSessionStorageData } from '../lib/utils';
 
 /**
  * HPバーコンポーネント（HP bar component）
