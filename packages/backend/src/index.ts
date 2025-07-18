@@ -36,36 +36,16 @@ const app = new Hono<{ Bindings: Bindings }>();
  * - 開発環境では localhostからのアクセスを許可
  */
 app.use('/*', cors({
-  origin: (origin, callback) => {
-    // originがない場合（同一オリジンからのリクエスト）は許可
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // 許可するオリジンのパターン
-    const allowedOrigins = [
-      'http://localhost:5173', // Vite開発サーバー
-      'http://localhost:5174', // Vite開発サーバー
-      'http://localhost:5175', // Vite開発サーバー
-      'http://localhost:3000', // 代替ポート
-      'https://monster-game-frontend.pages.dev', // 本番Pages URL
-      'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
-      'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
-    ];
-    
-    // 完全一致するオリジンがあれば許可
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Cloudflare Pagesのパターンマッチング（*.pages.dev）
-    if (origin.match(/^https:\/\/[a-zA-Z0-9-]+\.pages\.dev$/)) {
-      return callback(null, true);
-    }
-    
-    // その他のオリジンは拒否
-    callback(new Error('Not allowed by CORS'));
-  },
+  origin: [
+    'http://localhost:5173', // Vite開発サーバー
+    'http://localhost:5174', // Vite開発サーバー
+    'http://localhost:5175', // Vite開発サーバー
+    'http://localhost:3000', // 代替ポート
+    'https://monster-game-frontend.pages.dev', // 本番Pages URL
+    'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
+    'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
+    'https://*.pages.dev', // Cloudflare Pagesワイルドカード
+  ],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
