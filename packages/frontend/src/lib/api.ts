@@ -111,7 +111,7 @@ const apiRequest = async <T = unknown>(
   }
 
   // APIのベースURL（環境変数から取得）
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8787';
   const url = `${baseUrl}${endpoint}`;
 
   try {

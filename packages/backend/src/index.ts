@@ -41,7 +41,10 @@ app.use('/*', cors({
     'http://localhost:5174', // Vite開発サーバー
     'http://localhost:5175', // Vite開発サーバー
     'http://localhost:3000', // 代替ポート
-    'https://*.pages.dev',   // Cloudflare Pages
+    'https://monster-game-frontend.pages.dev', // 本番Pages URL
+    'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
+    'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
+    'https://*.pages.dev', // Cloudflare Pagesワイルドカード
   ],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],

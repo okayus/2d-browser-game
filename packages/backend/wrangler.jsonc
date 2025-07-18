@@ -72,7 +72,7 @@
         {
           "binding": "DB",
           "database_name": "monster-game-prod",
-          "database_id": "YOUR_PROD_DATABASE_ID_HERE" // 本番用は別途作成
+          "database_id": "9927d1b1-0cee-4d3d-9bdc-23cca02d73ca" // 本番用データベースID
         }
       ],
       "kv_namespaces": [
