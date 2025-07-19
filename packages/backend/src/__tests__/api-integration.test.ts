@@ -271,6 +271,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'モンスタートレーナー',
+        firebaseUid: 'test-user-id'
       }),
     });
     
@@ -285,7 +286,10 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     // 3. モンスター獲得
     const 獲得Response = await app.request(`/api/players/${プレイヤーId}/monsters`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-token' 
+      },
       body: JSON.stringify({ speciesId: みずガメ種族!.id }),
     });
 
@@ -324,6 +328,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'コレクター',
+        firebaseUid: 'test-user-id'
       }),
     });
     
@@ -336,12 +341,17 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     
     await app.request(`/api/players/${プレイヤーId}/monsters`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-token'
+      },
       body: JSON.stringify({ speciesId: いわゴーレム種族!.id }),
     });
 
     // 3. モンスター一覧取得
-    const 一覧Response = await app.request(`/api/players/${プレイヤーId}/monsters`);
+    const 一覧Response = await app.request(`/api/players/${プレイヤーId}/monsters`, {
+      headers: { 'Authorization': 'Bearer test-token' }
+    });
     
     expect(一覧Response.status).toBe(200);
     const 一覧Data = await 一覧Response.json() as APIレスポンス<モンスター一覧データ型[]>;
@@ -375,6 +385,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'ニックネーマー',
+        firebaseUid: 'test-user-id'
       }),
     });
     
@@ -384,7 +395,10 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     // 2. ニックネーム変更
     const 変更Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-token'
+      },
       body: JSON.stringify({ nickname: 'ピカチュウ' }),
     });
 
@@ -418,6 +432,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'バリデーションテスター',
+        firebaseUid: 'test-user-id'
       }),
     });
     
@@ -458,6 +473,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: 'リリーサー',
+        firebaseUid: 'test-user-id'
       }),
     });
     
@@ -475,6 +491,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     // 2. モンスター解放
     const 解放Response = await app.request(`/api/monsters/${初期モンスター!.id}`, {
       method: 'DELETE',
+      headers: { 'Authorization': 'Bearer test-token' }
     });
 
     expect(解放Response.status).toBe(200);
@@ -504,7 +521,10 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     // ニックネーム変更試行
     const 変更Response = await app.request(`/api/monsters/${存在しないId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-token'
+      },
       body: JSON.stringify({ nickname: 'テスト' }),
     });
 
@@ -515,6 +535,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
     // 解放試行
     const 解放Response = await app.request(`/api/monsters/${存在しないId}`, {
       method: 'DELETE',
+      headers: { 'Authorization': 'Bearer test-token' }
     });
 
     expect(解放Response.status).toBe(404);
@@ -536,6 +557,7 @@ describe('API統合テスト: プレイヤーとモンスター管理', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         name: '取得テストプレイヤー',
+        firebaseUid: 'test-user-id'
       }),
     });
     
