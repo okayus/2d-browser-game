@@ -46,6 +46,13 @@ export function PlayerCreationPage() {
       }
     })
     
+    // 既にプレイヤーが作成済みでゲーム状態が'playing'の場合はマップに遷移
+    if (gameState.playerId && gameState.gameState === 'playing' && gameState.selectedMonster) {
+      console.log('既存プレイヤーが検出されました。マップに遷移します。')
+      navigate('/map')
+      return
+    }
+    
     // Firebase認証済みのユーザーはプレイヤー名入力可能
     // LocalStorageにプレイヤー名がある場合は復元
     if (gameState.playerName) {
@@ -102,8 +109,20 @@ export function PlayerCreationPage() {
 
       // マップ画面に遷移
       navigate('/map')
+    } else if (error && error.includes('既に使用されています')) {
+      // 既存プレイヤーの場合、ローカルデータを確認してマップへ
+      console.log('既存プレイヤーが検出されました。マップに遷移します。')
+      
+      // ローカルストレージの状態を更新
+      updateGameState({
+        selectedMonster,
+        gameState: 'playing'
+      })
+
+      // マップ画面に遷移
+      navigate('/map')
     }
-    // エラーはusePlayerフックが管理
+    // その他のエラーはusePlayerフックが管理
   }
 
   /**

@@ -47,14 +47,16 @@ app.use('/*', cors({
       'http://localhost:5175', // Vite開発サーバー
       'http://localhost:3000', // 代替ポート
       'https://monster-game-frontend.pages.dev', // 本番Pages URL
-      'https://0fa50877.monster-game-frontend.pages.dev', // プレビューPages URL
+      'https://0fa50877.monster-game-frontend.pages.dev', // 現在のプロダクションURL
+      'https://6406579d.monster-game-frontend.pages.dev', // API修正後プロダクションURL
       'https://4d0814dc.monster-game-frontend.pages.dev', // 更新後Pages URL
       'https://67e4c43d.monster-game-frontend.pages.dev', // Firebase設定修正後URL
-      'https://5898f125.monster-game-frontend.pages.dev', // 最新のプロダクション URL
+      'https://5898f125.monster-game-frontend.pages.dev', // 以前のプロダクション URL
     ];
     
     // Pages.devのサブドメインパターン（動的に生成されるURL対応）
-    const pagesDevPattern = /^https:\/\/[a-z0-9-]+\.monster-game-frontend\.pages\.dev$/;
+    // 8文字の16進数のサブドメインパターンに対応（例：0fa50877）
+    const pagesDevPattern = /^https:\/\/[a-f0-9]{8}\.monster-game-frontend\.pages\.dev$/;
     
     // Originが未定義の場合（同一Origin）は許可
     if (!origin) {
@@ -73,6 +75,7 @@ app.use('/*', cors({
     // 最終判定
     const isAllowed = isExplicitlyAllowed || isPatternMatch;
     console.log('🔍 CORS Debug - Final decision:', isAllowed);
+    console.log('🔍 CORS Debug - Returning origin:', isAllowed ? origin : '');
     
     // 許可された場合はそのオリジンを返し、拒否された場合は空文字列を返す
     return isAllowed ? origin : '';
