@@ -111,7 +111,7 @@ const apiRequest = async <T = unknown>(
   }
 
   // APIのベースURL（環境変数から取得）
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://monster-game-backend-production.toshiaki-mukai-9981.workers.dev';
   const url = `${baseUrl}${endpoint}`;
 
   try {

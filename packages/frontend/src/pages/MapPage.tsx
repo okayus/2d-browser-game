@@ -160,13 +160,16 @@ export function MapPage() {
         return null
       }
 
+      // APIのベースURL（環境変数から取得）
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://monster-game-backend-production.toshiaki-mukai-9981.workers.dev'
+      
       // 開発環境では認証なしのテストエンドポイントを使用
       const isDevelopment = window.location.hostname === 'localhost'
       let response: Response
       
       if (isDevelopment) {
         console.log('開発環境：認証なしエンドポイントを使用')
-        response = await fetch(`/api/test/players/${encodeURIComponent(playerId)}/monsters`)
+        response = await fetch(`${baseUrl}/api/test/players/${encodeURIComponent(playerId)}/monsters`)
       } else {
         const token = await currentUser?.getIdToken()
         if (!token) {
@@ -174,7 +177,7 @@ export function MapPage() {
           throw new Error('認証トークンが取得できません')
         }
 
-        response = await fetch(`/api/players/${encodeURIComponent(playerId)}/monsters`, {
+        response = await fetch(`${baseUrl}/api/players/${encodeURIComponent(playerId)}/monsters`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
