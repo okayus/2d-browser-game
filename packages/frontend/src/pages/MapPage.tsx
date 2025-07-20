@@ -10,6 +10,7 @@ import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES, getStorageDat
 import { createRandomWildMonster, convertToBattlePlayerMonster } from '../lib/battle-utils'
 import { useAuth } from '../hooks'
 import { getMapData, validateMapData, MapData } from '../lib/mapData'
+import { monsterApi, handleApiError } from '../lib/api'
 
 /**
  * メッセージの型定義
@@ -146,7 +147,7 @@ export function MapPage() {
 
   /**
    * プレイヤーの最初のモンスターを取得（Get player's first monster）
-   * @description プレイヤーの所持モンスター一覧から最初のモンスターを取得
+   * @description api.tsのmonsterApiを使用してプレイヤーの所持モンスター一覧から最初のモンスターを取得
    * @param playerId - プレイヤーID
    * @returns 最初のモンスターデータまたはnull
    */
@@ -160,38 +161,8 @@ export function MapPage() {
         return null
       }
 
-      // 開発環境では認証なしのテストエンドポイントを使用
-      const isDevelopment = window.location.hostname === 'localhost'
-      let response: Response
-      
-      if (isDevelopment) {
-        console.log('開発環境：認証なしエンドポイントを使用')
-        response = await fetch(`/api/test/players/${encodeURIComponent(playerId)}/monsters`)
-      } else {
-        const token = await currentUser?.getIdToken()
-        if (!token) {
-          console.error('getPlayerFirstMonster: 認証トークンが取得できません')
-          throw new Error('認証トークンが取得できません')
-        }
-
-        response = await fetch(`/api/players/${encodeURIComponent(playerId)}/monsters`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-      }
-
-      if (!response.ok) {
-        console.error('getPlayerFirstMonster: APIエラー', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url
-        })
-        throw new Error(`モンスター一覧の取得に失敗: ${response.status} ${response.statusText}`)
-      }
-
-      const data: PlayerMonsterApiResponse = await response.json()
+      // monsterApiを使用してモンスター一覧を取得
+      const data = await monsterApi.getByPlayerId(playerId) as PlayerMonsterApiResponse
       
       // デバッグ用：API レスポンスをログ出力
       console.log('プレイヤーモンスター取得 API レスポンス:', data)
@@ -234,15 +205,17 @@ export function MapPage() {
       return null
 
     } catch (error) {
+      const errorMessage = handleApiError(error)
       console.error('プレイヤーモンスター取得エラー:', {
         error,
         playerId,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage,
         stack: error instanceof Error ? error.stack : undefined
       })
+      addMessage(`モンスター取得エラー: ${errorMessage}`, 'error')
       return null
     }
-  }, [currentUser])
+  }, [addMessage])
 
   /**
    * モンスターエンカウント処理（Monster encounter handling）

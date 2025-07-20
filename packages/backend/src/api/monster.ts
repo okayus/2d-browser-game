@@ -28,7 +28,7 @@ interface HTTPResponseType<T = unknown> {
 }
 import { ロガー } from '../utils/logger';
 import type { データベース型 } from '../db/types';
-import { firebaseAuthMiddleware } from '../middleware/firebase-auth';
+import { firebaseAuthMiddleware } from '../middleware/firebase-auth-new';
 
 // APIの型定義
 type Env = {

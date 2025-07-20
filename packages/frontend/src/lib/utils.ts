@@ -216,7 +216,8 @@ export function getGameState() {
     playerName: getStorageData<string>('player_name'),
     selectedMonster: getStorageData<typeof MONSTER_TYPES[0]>('selected_monster'),
     playerPosition: getStorageData<{ x: number; y: number }>('player_position', MAP_CONFIG.startPosition),
-    gameState: getStorageData<string>('game_state', 'start')
+    gameState: getStorageData<string>('game_state', 'start'),
+    playerId: getStorageData<string>('player_id')
   }
 }
 
