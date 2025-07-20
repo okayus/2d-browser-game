@@ -10,6 +10,7 @@ import { getGameState, updateGameState, MAP_CONFIG, MONSTER_TYPES, getStorageDat
 import { createRandomWildMonster, convertToBattlePlayerMonster } from '../lib/battle-utils'
 import { useAuth } from '../hooks'
 import { getMapData, validateMapData, MapData } from '../lib/mapData'
+import { monsterApi } from '../lib/api'
 
 /**
  * メッセージの型定義
