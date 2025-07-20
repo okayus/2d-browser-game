@@ -19,7 +19,7 @@ import { 初期データ投入 } from '../db/seed';
 import type { データベース型 } from '../db/types';
 import { TestD1Database, createTestD1Database } from './utils/TestD1Adapter';
 import { vi } from 'vitest';
-import * as authModule from '../middleware/firebase-auth';
+import * as authModule from '../middleware/firebase-auth-new';
 
 // APIレスポンスの型定義（Updated to new schema）
 interface APIレスポンス<T = unknown> {
@@ -112,7 +112,7 @@ const mockFirebaseAuthMiddleware = vi.fn().mockResolvedValue({
  * - 各テスト実行前にクリーンな状態にリセット
  */
 beforeAll(async () => {
-  // Firebase認証ミドルウェアをモック化
+  // Firebase認証ミドルウェアをモック化（新しいミドルウェア名に変更）
   vi.spyOn(authModule, 'firebaseAuthMiddleware').mockImplementation(mockFirebaseAuthMiddleware);
 
   // インメモリデータベースを作成

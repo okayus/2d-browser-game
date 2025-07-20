@@ -84,7 +84,8 @@ export async function firebaseAuthMiddleware(
         success: true,
         user: {
           uid: 'test-user-id',
-          email: 'test@example.com'
+          email: 'test@example.com',
+          auth_time: Math.floor(Date.now() / 1000)
         }
       };
     }

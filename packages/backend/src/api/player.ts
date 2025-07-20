@@ -19,7 +19,7 @@ import { players, monsterSpecies, ownedMonsters } from '../db/schema';
 import type { データベース型 } from '../db/types';
 import { ロガー } from '../utils/logger';
 import { uuid生成 } from '../utils/uuid';
-import { firebaseAuthMiddleware } from '../middleware/firebase-auth';
+import { firebaseAuthMiddleware } from '../middleware/firebase-auth-new';
 // import type { プレイヤー応答, プレイヤー一覧応答, エラー応答 } from '@monster-game/shared'; // 将来の実装で使用
 
 /**
