@@ -161,9 +161,9 @@ export function MapPage() {
         return null
       }
 
-      // APIのベースURL（環境変数から取得）
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://monster-game-backend-production.toshiaki-mukai-9981.workers.dev'
-      console.log('🔍 API BaseURL:', baseUrl)
+      // APIのベースURL（バックエンドWorkerのURL）
+      const baseUrl = 'https://monster-game-backend-production.toshiaki-mukai-9981.workers.dev'
+      console.log('🔍 API BaseURL (fixed):', baseUrl)
       console.log('🔍 VITE_API_URL:', import.meta.env.VITE_API_URL)
       
       // 開発環境では認証なしのテストエンドポイントを使用
