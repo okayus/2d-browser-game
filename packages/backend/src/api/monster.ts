@@ -307,14 +307,14 @@ app.get(
         .select({
           id: schema.ownedMonsters.id,
           speciesId: schema.ownedMonsters.speciesId,
-          ニックネーム: schema.ownedMonsters.nickname,
-          現在hp: schema.ownedMonsters.currentHp,
-          最大hp: schema.ownedMonsters.maxHp,
-          取得日時: schema.ownedMonsters.obtainedAt,
-          種族: {
+          nickname: schema.ownedMonsters.nickname,
+          currentHp: schema.ownedMonsters.currentHp,
+          maxHp: schema.ownedMonsters.maxHp,
+          obtainedAt: schema.ownedMonsters.obtainedAt,
+          species: {
             id: schema.monsterSpecies.id,
-            名前: schema.monsterSpecies.name,
-            基本hp: schema.monsterSpecies.baseHp,
+            name: schema.monsterSpecies.name,
+            baseHp: schema.monsterSpecies.baseHp,
           },
         })
         .from(schema.ownedMonsters)

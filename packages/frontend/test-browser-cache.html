@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブラウザキャッシュ確認ツール</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .result {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+        .success { border-left: 4px solid #4caf50; }
+        .error { border-left: 4px solid #f44336; }
+        .info { border-left: 4px solid #2196f3; }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 モンスターゲーム - キャッシュ確認ツール</h1>
+        
+        <div id="results"></div>
+        
+        <h2>アクション</h2>
+        <button onclick="checkCache()">キャッシュ状態を確認</button>
+        <button onclick="clearAllCache()">全キャッシュをクリア</button>
+        <button onclick="testApiCall()">API呼び出しテスト</button>
+        <button onclick="forceReload()">強制リロード</button>
+    </div>
+
+    <script>
+        const FRONTEND_URL = 'https://0c40db7b.monster-game-frontend.pages.dev';
+        const BACKEND_URL = 'https://monster-game-backend-production.toshiaki-mukai-9981.workers.dev';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.insertBefore(div, results.firstChild);
+        }
+        
+        async function checkCache() {
+            log('=== キャッシュ確認開始 ===', 'info');
+            
+            // 1. Service Worker確認
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length > 0) {
+                    log(`Service Worker検出: ${registrations.length}個`, 'error');
+                    registrations.forEach((reg, i) => {
+                        log(`  - SW[${i}]: ${reg.scope}`, 'error');
+                    });
+                } else {
+                    log('Service Workerなし', 'success');
+                }
+            }
+            
+            // 2. JSファイルの確認
+            try {
+                const response = await fetch(`${FRONTEND_URL}/assets/index-BfLVlEvF.js`, {
+                    cache: 'no-cache'
+                });
+                const text = await response.text();
+                
+                // API URLの埋め込み確認
+                if (text.includes('monster-game-backend-production')) {
+                    log('✅ JSファイルに正しいAPI URLが含まれています', 'success');
+                } else {
+                    log('❌ JSファイルに正しいAPI URLが含まれていません', 'error');
+                }
+                
+                // ファイルサイズ確認
+                log(`JSファイルサイズ: ${(text.length / 1024).toFixed(2)} KB`, 'info');
+                
+            } catch (error) {
+                log(`JSファイル確認エラー: ${error.message}`, 'error');
+            }
+            
+            // 3. ブラウザキャッシュ情報
+            if (performance && performance.getEntriesByType) {
+                const resources = performance.getEntriesByType('resource');
+                const jsFiles = resources.filter(r => r.name.includes('.js'));
+                log(`読み込まれたJSファイル: ${jsFiles.length}個`, 'info');
+                jsFiles.forEach(file => {
+                    const fromCache = file.transferSize === 0 && file.decodedBodySize > 0;
+                    log(`  - ${file.name.split('/').pop()}: ${fromCache ? 'キャッシュから' : 'ネットワークから'}`, fromCache ? 'error' : 'success');
+                });
+            }
+        }
+        
+        async function clearAllCache() {
+            log('=== キャッシュクリア開始 ===', 'info');
+            
+            // 1. Service Worker削除
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                    log(`Service Worker削除: ${registration.scope}`, 'success');
+                }
+            }
+            
+            // 2. Cache Storage削除
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (const name of cacheNames) {
+                    await caches.delete(name);
+                    log(`Cache削除: ${name}`, 'success');
+                }
+            }
+            
+            // 3. localStorage/sessionStorageクリア
+            localStorage.clear();
+            sessionStorage.clear();
+            log('localStorage/sessionStorageクリア完了', 'success');
+            
+            log('✅ 全キャッシュクリア完了', 'success');
+        }
+        
+        async function testApiCall() {
+            log('=== API呼び出しテスト ===', 'info');
+            
+            // テスト用のプレイヤーID
+            const testPlayerId = 'test-player-id';
+            
+            // 1. フロントエンドURL経由（問題のケース）
+            try {
+                const frontendUrl = `${FRONTEND_URL}/api/players/${testPlayerId}/monsters`;
+                log(`テスト1: ${frontendUrl}`, 'info');
+                const response1 = await fetch(frontendUrl);
+                const contentType1 = response1.headers.get('content-type');
+                log(`  レスポンス: ${response1.status} ${contentType1}`, contentType1.includes('json') ? 'success' : 'error');
+                
+                if (contentType1.includes('html')) {
+                    const text = await response1.text();
+                    log('  ❌ HTMLが返されています（404ページ）', 'error');
+                }
+            } catch (error) {
+                log(`  エラー: ${error.message}`, 'error');
+            }
+            
+            // 2. バックエンドURL直接（正しいケース）
+            try {
+                const backendUrl = `${BACKEND_URL}/api/players/${testPlayerId}/monsters`;
+                log(`テスト2: ${backendUrl}`, 'info');
+                const response2 = await fetch(backendUrl);
+                const contentType2 = response2.headers.get('content-type');
+                log(`  レスポンス: ${response2.status} ${contentType2}`, contentType2.includes('json') ? 'success' : 'error');
+                
+                if (contentType2.includes('json')) {
+                    const data = await response2.json();
+                    log('  ✅ 正しいJSONレスポンス', 'success');
+                }
+            } catch (error) {
+                log(`  エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        function forceReload() {
+            log('強制リロードを実行します...', 'info');
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        }
+        
+        // 初期チェック
+        window.onload = () => {
+            log('ページ読み込み完了', 'info');
+            checkCache();
+        };
+    </script>
+</body>
+</html>

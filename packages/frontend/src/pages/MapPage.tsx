@@ -128,22 +128,22 @@ export function MapPage() {
   }, [navigate, addMessage])
 
   /**
-   * API レスポンスの型定義
+   * プレイヤーモンスターの型定義
+   * 初学者向けメモ：apiRequestはdata部分のみ返すため、配列型として定義
    */
-  interface PlayerMonsterApiResponse {
-    success: boolean;
-    data: Array<{
+  type PlayerMonsterApiResponse = Array<{
+    id: string;
+    speciesId: string;
+    nickname: string | null;
+    currentHp: number;
+    maxHp: number;
+    obtainedAt: string;
+    species?: {
       id: string;
-      speciesId: string;
-      ニックネーム: string | null;
-      現在hp: number;
-      最大hp: number;
-      種族?: {
-        名前: string;
-      };
-    }>;
-    count: number;
-  }
+      name: string;
+      baseHp: number;
+    };
+  }>;
 
   /**
    * プレイヤーの最初のモンスターを取得（Get player's first monster）
@@ -153,7 +153,10 @@ export function MapPage() {
    */
   const getPlayerFirstMonster = useCallback(async (playerId: string) => {
     try {
+      console.log('=== getPlayerFirstMonster デバッグ開始 ===')
       console.log('getPlayerFirstMonster called with playerId:', playerId)
+      console.log('playerId type:', typeof playerId)
+      console.log('playerId length:', playerId?.length)
       
       // 入力値の検証
       if (!playerId || typeof playerId !== 'string' || playerId.trim() === '') {
@@ -161,27 +164,48 @@ export function MapPage() {
         return null
       }
 
+      // 現在の認証状況をチェック
+      console.log('現在の認証ユーザー:', currentUser?.uid)
+      console.log('LocalStorageの内容:', {
+        player_id: localStorage.getItem('player_id'),
+        player_name: localStorage.getItem('player_name'),
+        game_state: localStorage.getItem('game_state')
+      })
+
       // monsterApiを使用してモンスター一覧を取得
-      const data = await monsterApi.getByPlayerId(playerId) as PlayerMonsterApiResponse
+      console.log('モンスターAPI呼び出し開始...')
+      const response = await monsterApi.getByPlayerId(playerId) as PlayerMonsterApiResponse
       
       // デバッグ用：API レスポンスをログ出力
-      console.log('プレイヤーモンスター取得 API レスポンス:', data)
+      console.log('プレイヤーモンスター取得 API レスポンス:', response)
+      console.log('レスポンスのタイプ:', typeof response)
+      console.log('レスポンスは配列か:', Array.isArray(response))
       
-      // レスポンスの型チェック
-      if (!data || typeof data !== 'object' || !Array.isArray(data.data)) {
-        console.error('getPlayerFirstMonster: 無効なAPIレスポンス形式', { data })
+      // レスポンスの型チェック（配列であることを確認）
+      if (!response || !Array.isArray(response)) {
+        console.error('getPlayerFirstMonster: レスポンスが配列ではない', { response })
         return null
       }
 
+      console.log('モンスター一覧データ:', response)
+      console.log('モンスター件数:', response.length)
+
       // 最初のモンスターを返す（HPが1以上のもの）
-      const availableMonsters = data.data.filter((monster) => {
+      const availableMonsters = response.filter((monster, index) => {
+        console.log(`モンスター${index + 1}チェック:`, monster)
+        
         // データの必須フィールドチェック
-        if (!monster.id || !monster.speciesId || typeof monster.現在hp !== 'number' || typeof monster.最大hp !== 'number') {
+        if (!monster.id || !monster.speciesId || typeof monster.currentHp !== 'number' || typeof monster.maxHp !== 'number') {
           console.warn('getPlayerFirstMonster: 無効なモンスターデータをスキップ', { monster })
           return false
         }
-        return monster.現在hp > 0 && monster.最大hp > 0
+        
+        const isAvailable = monster.currentHp > 0 && monster.maxHp > 0
+        console.log(`モンスター${index + 1}利用可能:`, isAvailable, `(HP: ${monster.currentHp}/${monster.maxHp})`)
+        return isAvailable
       })
+      
+      console.log('利用可能なモンスター数:', availableMonsters.length)
       
       if (availableMonsters.length > 0) {
         const monster = availableMonsters[0]
@@ -191,28 +215,44 @@ export function MapPage() {
         const result = {
           id: monster.id,
           speciesId: monster.speciesId,
-          nickname: monster.ニックネーム,
-          currentHp: monster.現在hp,
-          maxHp: monster.最大hp,
-          種族: monster.種族
+          nickname: monster.nickname,
+          currentHp: monster.currentHp,
+          maxHp: monster.maxHp,
+          species: monster.species
         }
         
         console.log('getPlayerFirstMonster: 変換されたモンスターデータ', result)
+        console.log('=== getPlayerFirstMonster デバッグ完了（成功） ===')
         return result
       }
       
-      console.log('使用可能なモンスターが見つかりません')
+      console.warn('使用可能なモンスターが見つかりません - モンスター一覧:', response)
+      console.log('=== getPlayerFirstMonster デバッグ完了（モンスターなし） ===')
       return null
 
     } catch (error) {
       const errorMessage = handleApiError(error)
+      console.error('=== getPlayerFirstMonster エラー発生 ===')
       console.error('プレイヤーモンスター取得エラー:', {
         error,
         playerId,
         errorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
         stack: error instanceof Error ? error.stack : undefined
       })
+      
+      // API エラーの詳細を出力
+      if (error && typeof error === 'object' && 'status' in error) {
+        console.error('APIエラー詳細:', {
+          status: (error as any).status,
+          message: (error as any).message,
+          response: (error as any).response
+        })
+      }
+      
       addMessage(`モンスター取得エラー: ${errorMessage}`, 'error')
+      console.log('=== getPlayerFirstMonster デバッグ完了（エラー） ===')
       return null
     }
   }, [addMessage])

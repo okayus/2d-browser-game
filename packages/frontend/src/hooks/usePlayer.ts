@@ -27,7 +27,7 @@ interface UsePlayerReturn {
   /** エラーメッセージ */
   error: string | null
   /** プレイヤー作成関数 */
-  createPlayer: (name: string) => Promise<PlayerData | null>
+  createPlayer: (name: string, selectedMonsterSpecies?: string) => Promise<PlayerData | null>
   /** プレイヤー情報取得関数 */
   getPlayer: (id: string) => Promise<PlayerData | null>
   /** エラーをクリア */
@@ -53,15 +53,20 @@ export function usePlayer(): UsePlayerReturn {
   /**
    * プレイヤー作成
    * @param name - プレイヤー名
+   * @param selectedMonsterSpecies - 選択されたモンスター種族名
    * @returns 作成されたプレイヤー情報またはnull
    */
-  const createPlayer = useCallback(async (name: string): Promise<PlayerData | null> => {
+  const createPlayer = useCallback(async (name: string, selectedMonsterSpecies?: string): Promise<PlayerData | null> => {
     setIsLoading(true)
     setError(null)
 
     try {
       // 新しいAPIクライアントを使用
-      const response = await playerApi.create({ name })
+      const requestBody: { name: string; selectedMonsterSpecies?: string } = { name }
+      if (selectedMonsterSpecies) {
+        requestBody.selectedMonsterSpecies = selectedMonsterSpecies
+      }
+      const response = await playerApi.create(requestBody)
       
       const apiResponse = response as {
         id: string;

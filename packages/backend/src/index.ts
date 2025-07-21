@@ -749,7 +749,9 @@ app.delete('/api/test/monsters/:monsterId', async (c) => {
 });
 
 // モンスターAPIのマウント
-app.route('/api', モンスターAPI);
+// 初学者向けメモ：モンスターAPIは既に/apiプレフィックスを含んでいるため、
+// ルートパスにマウントして重複を避ける
+app.route('/', モンスターAPI);
 
 /**
  * 404エラーハンドリング

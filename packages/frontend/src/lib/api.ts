@@ -113,6 +113,15 @@ const apiRequest = async <T = unknown>(
   // APIのベースURL（環境変数から取得）
   const baseUrl = import.meta.env.VITE_API_URL || 'https://monster-game-backend-production.toshiaki-mukai-9981.workers.dev';
   const url = `${baseUrl}${endpoint}`;
+  
+  // デバッグログ: API呼び出し詳細
+  console.log(`[API Debug] ${method} ${url}`, {
+    endpoint,
+    baseUrl,
+    environmentUrl: import.meta.env.VITE_API_URL,
+    requireAuth,
+    hasToken: !!requestHeaders.Authorization
+  });
 
   try {
     // APIリクエスト実行
@@ -125,12 +134,28 @@ const apiRequest = async <T = unknown>(
     // レスポンスのJSON解析
     let responseData: ApiResponse<T>;
     try {
+      // デバッグログ: レスポンス詳細
+      const contentType = response.headers.get('content-type');
+      console.log(`[API Debug] Response ${response.status} ${contentType}`, {
+        status: response.status,
+        statusText: response.statusText,
+        contentType,
+        url: response.url
+      });
+      
       responseData = await response.json();
     } catch (parseError) {
-      // JSONパースエラーの場合
+      // JSONパースエラーの場合 - レスポンス内容をログ出力
+      const responseText = await response.text().catch(() => 'レスポンステキスト取得失敗');
+      console.error(`[API Debug] JSON Parse Error for ${url}:`, {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        responseText: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
+      });
+      
       throw new ApiError(
         response.status,
-        `レスポンスの解析に失敗しました: ${response.statusText}`
+        `レスポンスの解析に失敗しました: ${response.statusText}. Content-Type: ${response.headers.get('content-type')}`
       );
     }
 

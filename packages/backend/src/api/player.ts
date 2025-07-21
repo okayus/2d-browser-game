@@ -36,6 +36,8 @@ interface AuthEnv {
 const playerCreationSchema = z.object({
   /** プレイヤー名（Player name） */
   name: z.string().min(1, '名前は必須です').max(20, '名前は20文字以内で入力してください'),
+  /** 選択されたスターターモンスターの種族名（Selected starter monster species name） */
+  selectedMonsterSpecies: z.string().optional(),
   // Firebase UIDは認証ミドルウェアから取得するため、リクエストボディからは削除
 });
 
@@ -81,7 +83,7 @@ export function playerRouter(db: データベース型, authEnv: AuthEnv) {
         return authResult.response;
       }
 
-      const { name } = c.req.valid('json');
+      const { name, selectedMonsterSpecies } = c.req.valid('json');
       const firebaseUid = authResult.user.uid; // 認証済みユーザーのUIDを使用
       
       // 一意IDを生成（Generate unique ID for CI environment compatibility）
@@ -125,7 +127,7 @@ export function playerRouter(db: データベース型, authEnv: AuthEnv) {
       }
       
       // 初期モンスターを付与（Grant initial monster）
-      const initialMonster = await grantInitialMonster(db, playerId);
+      const initialMonster = await grantInitialMonster(db, playerId, selectedMonsterSpecies);
       
       // 成功レスポンス（Success response）
       return c.json({
@@ -147,7 +149,10 @@ export function playerRouter(db: データベース型, authEnv: AuthEnv) {
       }, 201);
       
     } catch (error) {
-      ロガー.エラー('プレイヤー作成エラー', error instanceof Error ? error : new Error(String(error)));
+      ロガー.エラー('プレイヤー作成エラー詳細', error instanceof Error ? error : new Error(String(error)), {
+        name: (c.req.valid('json') as any)?.name,
+        authResult: 'Firebase認証結果は取得済み'
+      });
       
       return c.json({
         success: false,
@@ -264,14 +269,16 @@ export function playerRouter(db: データベース型, authEnv: AuthEnv) {
  * 
  * 初学者向けメモ：（For beginners:）
  * - 新規プレイヤーにスターターモンスターを1体付与（Grant one starter monster to new player）
- * - でんきネズミ、ほのおトカゲ、くさモグラの3種類からランダム選択（Random selection from 3 types: Electric Mouse, Fire Lizard, Grass Mole）
+ * - でんきネズミ、ほのおトカゲ、くさモグラの3種類から選択（Selection from 3 types: Electric Mouse, Fire Lizard, Grass Mole）
+ * - 種族名が指定されていない場合はランダム選択（Random selection if species name not specified）
  * - 選択されたモンスターを所持モンスターテーブルに追加（Add selected monster to owned monsters table）
  * 
  * @param db - データベース接続インスタンス（Database connection instance）
  * @param playerId - 対象プレイヤーのID（Target player ID）
+ * @param preferredSpeciesName - 希望する種族名、未指定時はランダム選択（Preferred species name, random if not specified）
  * @returns 付与されたモンスターの情報、失敗時はnull（Granted monster information, null on failure）
  */
-async function grantInitialMonster(db: データベース型, playerId: string) {
+async function grantInitialMonster(db: データベース型, playerId: string, preferredSpeciesName?: string) {
   try {
     // スターターモンスターの種族名を定義（Define starter monster species names）
     const starterSpeciesNames = ['でんきネズミ', 'ほのおトカゲ', 'くさモグラ'];
@@ -287,9 +294,37 @@ async function grantInitialMonster(db: データベース型, playerId: string) 
       return null;
     }
     
-    // ランダムに1体選択（Randomly select one）
-    const randomIndex = Math.floor(Math.random() * starterSpeciesList.length);
-    const selectedSpecies = starterSpeciesList[randomIndex];
+    // 希望する種族が指定されている場合はそれを選択、そうでなければランダム選択
+    // （Select preferred species if specified, otherwise random selection）
+    let selectedSpecies;
+    
+    if (preferredSpeciesName && starterSpeciesNames.includes(preferredSpeciesName)) {
+      // 指定された種族名がスターター種族に含まれているかチェック
+      selectedSpecies = starterSpeciesList.find(species => species.name === preferredSpeciesName);
+      
+      if (!selectedSpecies) {
+        ロガー.警告('指定された種族がデータベースに見つかりません、ランダム選択に変更', { 
+          preferredSpeciesName, 
+          availableSpecies: starterSpeciesList.map(s => s.name) 
+        });
+        // 見つからない場合はランダム選択にフォールバック
+        const randomIndex = Math.floor(Math.random() * starterSpeciesList.length);
+        selectedSpecies = starterSpeciesList[randomIndex];
+      } else {
+        ロガー.情報('指定された種族を選択', { selectedSpeciesName: selectedSpecies.name });
+      }
+    } else {
+      // 種族名が指定されていないか、無効な種族名の場合はランダム選択
+      if (preferredSpeciesName) {
+        ロガー.警告('無効な種族名が指定されました、ランダム選択に変更', { 
+          preferredSpeciesName, 
+          validSpecies: starterSpeciesNames 
+        });
+      }
+      const randomIndex = Math.floor(Math.random() * starterSpeciesList.length);
+      selectedSpecies = starterSpeciesList[randomIndex];
+      ロガー.情報('ランダムに種族を選択', { selectedSpeciesName: selectedSpecies?.name });
+    }
     
     if (!selectedSpecies) {
       ロガー.エラー('スターターモンスターの選択に失敗しました', new Error('選択された種族がundefinedです'));

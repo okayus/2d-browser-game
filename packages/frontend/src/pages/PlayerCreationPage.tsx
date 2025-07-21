@@ -96,8 +96,8 @@ export function PlayerCreationPage() {
       return
     }
 
-    // 実際のAPI経由でプレイヤー作成
-    const createdPlayer = await createPlayer(playerName.trim())
+    // 実際のAPI経由でプレイヤー作成（選択されたモンスター種族名も送信）
+    const createdPlayer = await createPlayer(playerName.trim(), selectedMonster?.name)
     
     if (createdPlayer) {
       // ローカルストレージにも保存（互換性のため）
